@@ -13,12 +13,19 @@ import { AuthController } from './auth.controller';
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.register({
-      global: true,
-      secret: 'secretKey',
-      signOptions: { expiresIn: '60s' },
+    JwtModule.registerAsync({
+      useFactory: async (configService: ConfigService) => {
+        return {
+          // envファイルから秘密鍵を渡す
+          secret: configService.get<string>('JWT_SECRET'),
+          signOptions: {
+            // 有効期間を設定
+            expiresIn: '1200s'
+          },
+        };
+      },
+      inject: [ConfigService], // useFactoryで使う為にConfigServiceを注入する
     }),
-    ConfigModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, LocalStrategy, GoogleStrategy],
