@@ -13,26 +13,23 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  /**
-   * ユーザーの認証
-   * 
-   * @param {string} email
-   * @param {string} pass
-   * @returns {Promise<any>}
-   */
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOne(email);
-    if (user && bcrypt.compareSync(pass, user.password)) {
-      const { password, ...result } = user;
-      return result;
+  async findOrCreateUser(input: {
+    email: string;
+    name: string;
+  }): Promise<User> {
+    const user = await this.usersService.findOne(input.email);
+
+    if (user) {
+      return user;
     }
-    return null;
+
+    return await this.usersService.create(input);
   }
 
   /**
    * ログイン処理
    * ※アクセストークンを返却
-   * 
+   *
    * @param {User} user
    * @returns {Promise<{ access_token: string }>}
    */

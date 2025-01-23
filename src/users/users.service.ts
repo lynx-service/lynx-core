@@ -10,19 +10,17 @@ export class UsersService {
 
   /**
    * ユーザーの新規登録
-   * 
+   *
    * @param {CreateUserDto} createUserDto
    * @returns {Promise<User>}
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
-    return this.userDao.create({ ...createUserDto, password: hashedPassword });
+    return this.userDao.create({ ...createUserDto });
   }
 
   /**
    * ログインのためのユーザー情報取得
-   * 
+   *
    * @param {string} email
    * @returns {Promise<User | undefined>}
    */
