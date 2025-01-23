@@ -7,16 +7,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   const token = url.searchParams.get("token");
 
   if (!token) {
-    return redirect("/"); // トークンがない場合はトップページにリダイレクト
+    return redirect("/login"); // トークンがない場合はログイン画面にリダイレクト
   }
 
   // セッションにトークンを保存
   const session = await getSession(request.headers.get("Cookie"));
   session.set("token", token);
-
-  console.log("session", session);
-
-  console.log(session.get("token"));
 
   return redirect("/", {
     headers: {

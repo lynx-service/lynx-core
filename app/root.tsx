@@ -10,6 +10,8 @@ import {
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
+import { CiLight } from "react-icons/ci";
+import { MdDarkMode } from "react-icons/md";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -59,13 +61,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               className="text-gray-600 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none"
             >
               {theme === "light" ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m8.485-8.485l-.707.707m-15.556 0l.707.707M21 12h1M3 12H2m16.364-6.364l-.707.707M4.343 4.343l.707.707" />
-                </svg>
+                <CiLight />
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9 9 0 1020.354 15.354z" />
-                </svg>
+                <MdDarkMode />
               )}
             </button>
           </div>

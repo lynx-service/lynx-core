@@ -1,6 +1,7 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
-import { getSession } from "../utils/session.server";
+import { useLoaderData } from "react-router";
+import { getSession } from "~/utils/session.server";
+import { requireAuth } from "~/utils/auth.server";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -10,13 +11,30 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
+  const user = await requireAuth(request);
   const session = await getSession(request.headers.get("Cookie"));
-  return { session };
+  const token = session.get("token");
+
+  const res = await fetch("http://localhost:3000/hello", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    }
+  });
+
+  if (!res.ok) {
+    throw new Response("Failed to fetch data", { status: res.status });
+  }
+
+  const data: string = await res.text();
+  return { data };
 };
 
-export default function Home({
-  session,
-}: any
-) {
-  return <Welcome />;
+export default function Home() {
+  const { data } = useLoaderData();
+
+  return (
+    <div>
+      {data}
+    </div>
+  );
 }
