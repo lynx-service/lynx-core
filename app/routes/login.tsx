@@ -1,5 +1,3 @@
-import { Form } from "react-router";
-
 export default function Login() {
   return (
     <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-800 overflow-hidden max-h-[80vh]">
@@ -8,7 +6,7 @@ export default function Login() {
         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
           LYNXは効率的なサイト運営をサポートします。Googleアカウントでログインして始めましょう。
         </p>
-        <Form method="post" action="/auth/google">
+        <a href="http://localhost:3000/auth/google">
           <button
             type="submit"
             className="flex items-center justify-center w-full py-3 px-5 text-white bg-blue-500 hover:bg-blue-600 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1"
@@ -40,7 +38,7 @@ export default function Login() {
               <span>Googleでサインインする</span>
             </div>
           </button>
-        </Form>
+        </a>
       </div>
     </div>
   );

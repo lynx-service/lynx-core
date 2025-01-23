@@ -29,8 +29,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const matches = useMatches();
   const isLoginPage = matches.some((match) => match.id === "routes/login");
 
-  console.log("isLoginPage", matches);
-
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") || "light";
