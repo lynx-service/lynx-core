@@ -2,6 +2,7 @@ import type { Route } from "./+types/home";
 import { useLoaderData } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
+import { Button } from "@mui/material";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -37,6 +38,7 @@ export default function Home() {
   return (
     <>
       <div className="text-gray-600 dark:text-gray-300">
+        <Button variant="contained">Contained</Button>
         <div>
           {data}
         </div>

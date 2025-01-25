@@ -13,6 +13,7 @@ import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
 import { CiLight } from "react-icons/ci";
 import { MdDarkMode } from "react-icons/md";
+import { IconContext } from "react-icons/lib";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -67,11 +68,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
               className="text-gray-600 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none"
             >
-              {theme === "light" ? (
-                <CiLight />
-              ) : (
-                <MdDarkMode />
-              )}
+              <IconContext.Provider value={{ size: "1.5rem" }}>
+                {theme === "light" ? (
+                  <CiLight />
+                ) : (
+                  <MdDarkMode />
+                )}
+              </IconContext.Provider>
             </button>
           </div>
         </header>
@@ -79,28 +82,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-grow pt-16">
           {/* サイドバー */}
           {!isLoginPage && (
-            <aside className="bg-white dark:bg-gray-900 w-64 min-h-screen border-r border-gray-200 dark:border-gray-700 hidden md:flex flex-col fixed left-0 top-16">
-              <nav className="flex flex-col h-full py-4 px-6">
+            <aside className="text-sm bg-white dark:bg-gray-900 w-40 min-h-screen border-r border-gray-200 dark:border-gray-700 hidden md:flex flex-col fixed left-0 top-16 shadow-lg">
+              <nav className="flex flex-col h-full py-4 px-2">
                 <div className="flex-grow space-y-2">
-                  <a href="/" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <a href="/" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Dashboard
                   </a>
-                  <a href="/users" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <a href="/users" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Users
                   </a>
-                  <a href="/reports" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <a href="/reports" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Reports
                   </a>
-                  <a href="/settings" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <a href="/settings" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Settings
                   </a>
                 </div>
 
-                <div className="mt-auto">
+                <div className="mt-56">
                   <Form method="post" action="/logout">
                     <button
                       type="submit"
-                      className="w-full px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-700 text-left">
+                      className="w-full px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-zinc-50 hover:bg-red-700 text-left">
                       ログアウト
                     </button>
                   </Form>
@@ -110,7 +113,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Main Content */}
-          <main className={`flex-grow ${!isLoginPage ? "ml-64" : ""} bg-gray-50 dark:bg-gray-800 p-6`}>
+          <main className={`flex-grow ${!isLoginPage ? "ml-40" : ""} bg-gray-50 dark:bg-gray-800 p-6`}>
             {children}
           </main>
         </div>

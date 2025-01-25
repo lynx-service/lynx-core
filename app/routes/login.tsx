@@ -6,16 +6,18 @@ export default function Login() {
       <div className="bg-white dark:bg-gray-900 p-10 rounded-lg shadow-md w-full max-w-lg h-auto overflow-y-auto">
         <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-200 mb-6 text-center">LYNX</h2>
         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-          LYNXは効率的なサイト運営をサポートします。Googleアカウントでログインして始めましょう。
+          LYNXは効率的なサイト運営をサポートします。
+          <br />
+          Googleアカウントでログインして始めましょう。
         </p>
         <a href="http://localhost:3000/auth/google">
           <button
             type="submit"
-            className="flex items-center justify-center w-full py-3 px-5 text-white bg-green-500 hover:bg-green-600 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1"
+            className="flex items-center justify-center w-full py-3 px-5 text-white bg-emerald-800 hover:bg-emerald-600 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1"
           >
             <div className="flex items-center space-x-3">
               <FcGoogle />
-              <span>Googleでサインインする</span>
+              <span>Googleでサインイン</span>
             </div>
           </button>
         </a>
