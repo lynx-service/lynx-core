@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
 import { UserDao } from './dao/user.dao';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 
@@ -25,6 +24,6 @@ export class UsersService {
    * @returns {Promise<User | undefined>}
    */
   async findOne(email: string): Promise<User | undefined> {
-    return this.userDao.findOne(email);
+    return this.userDao.findByEmail(email);
   }
 }

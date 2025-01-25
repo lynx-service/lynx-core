@@ -11,13 +11,13 @@ export class UserDao {
   constructor(private readonly prismaService: PrismaService) {}
 
   /**
-   * ユーザーの新規登録
+   * ユーザーIDからユーザーを取得
    *
-   * @param {CreateUserDto} createUserDto
-   * @returns {User}
+   * @param {number} id
+   * @returns {Promise<User>}
    */
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    return this.prismaService.user.create({ data: createUserDto });
+  async findById(id: number): Promise<User> {
+    return this.prismaService.user.findUnique({ where: { id } });
   }
 
   /**
@@ -26,7 +26,17 @@ export class UserDao {
    * @param {string} email
    * @returns {User | undefined}
    */
-  async findOne(email: string): Promise<User | undefined> {
+  async findByEmail(email: string): Promise<User | undefined> {
     return this.prismaService.user.findUnique({ where: { email } });
+  }
+
+  /**
+   * ユーザーの新規登録
+   *
+   * @param {CreateUserDto} createUserDto
+   * @returns {User}
+   */
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    return this.prismaService.user.create({ data: createUserDto });
   }
 }
