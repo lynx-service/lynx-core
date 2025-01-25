@@ -6,6 +6,7 @@ import {
   Scripts,
   ScrollRestoration,
   useMatches,
+  Form,
 } from "react-router";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/root";
@@ -31,6 +32,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const matches = useMatches();
   const isLoginPage = matches.some((match) => match.id === "routes/login");
 
+  // FIXME：サーバーサイドとクライアントサイドでテーマの状態が同期されない
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("theme") || "light";
@@ -48,6 +50,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" className={theme}>
       <head>
+        <meta charSet="utf-8" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1"
+        />
         <Meta />
         <Links />
       </head>
@@ -72,20 +79,32 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex flex-grow pt-16">
           {/* サイドバー */}
           {!isLoginPage && (
-            <aside className="bg-white dark:bg-gray-900 w-64 min-h-screen border-r border-gray-200 dark:border-gray-700 hidden md:block fixed left-0 top-16">
-              <nav className="py-4 px-6 space-y-2">
-                <a href="/" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  Dashboard
-                </a>
-                <a href="/users" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  Users
-                </a>
-                <a href="/reports" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  Reports
-                </a>
-                <a href="/settings" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  Settings
-                </a>
+            <aside className="bg-white dark:bg-gray-900 w-64 min-h-screen border-r border-gray-200 dark:border-gray-700 hidden md:flex flex-col fixed left-0 top-16">
+              <nav className="flex flex-col h-full py-4 px-6">
+                <div className="flex-grow space-y-2">
+                  <a href="/" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    Dashboard
+                  </a>
+                  <a href="/users" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    Users
+                  </a>
+                  <a href="/reports" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    Reports
+                  </a>
+                  <a href="/settings" className="block px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    Settings
+                  </a>
+                </div>
+
+                <div className="mt-auto">
+                  <Form method="post" action="/logout">
+                    <button
+                      type="submit"
+                      className="w-full px-4 py-2 rounded text-gray-600 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-700 text-left">
+                      ログアウト
+                    </button>
+                  </Form>
+                </div>
               </nav>
             </aside>
           )}
