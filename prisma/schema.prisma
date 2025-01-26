@@ -13,8 +13,175 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// 管理者
+model AdminUser {
+  id           Int      @id @default(autoincrement()) @map("id")
+  email        String   @unique @map("email")
+  refreshToken String   @map("refresh_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_user")
+}
+
+// ユーザー権限
+model Role {
+  id        String   @id @map("id")
+  roleName  String   @map("role_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("role")
+}
+
+// プラン
+model Plan {
+  id           Int      @id @default(autoincrement()) @map("id")
+  planName     String   @map("plan_name")
+  price        Int      @map("price")
+  billingCycle String   @map("billing_cycle")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  subscriptions Subscription[]
+
+  @@map("plan")
+}
+
+// ワークスペース
+model Workspace {
+  id        Int      @id @default(autoincrement()) @map("id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users         User[]
+  projects      Project[]
+  subscriptions Subscription[]
+
+  @@map("workspace")
+}
+
+// 契約
+model Subscription {
+  id          Int      @id @default(autoincrement()) @map("id")
+  workspaceId Int      @map("workspace_id")
+  planId      Int      @map("plan_id")
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  plan      Plan      @relation(fields: [planId], references: [id])
+
+  @@map("subscription")
+}
+
+// ユーザー
 model User {
-  id       Int    @id @default(autoincrement())
-  email    String @unique
-  name     String
+  id           Int      @id @default(autoincrement()) @map("id")
+  roleId       String   @map("role_id")
+  workspaceId  Int      @map("workspace_id")
+  email        String   @unique @map("email")
+  refreshToken String   @map("refresh_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  role      Role      @relation(fields: [roleId], references: [id])
+
+  @@map("user")
+}
+
+// プロジェクト
+model Project {
+  id                  Int       @id @default(autoincrement()) @map("id")
+  workspaceId         Int       @map("workspace_id")
+  projectUrl          String    @map("project_url")
+  projectName         String    @map("project_name")
+  description         String?   @map("description")
+  lastAcquisitionDate DateTime? @map("last_acquisition_date")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  keywords  Keyword[]
+  articles  Article[]
+
+  @@map("project")
+}
+
+// キーワード
+model Keyword {
+  id           Int      @id @default(autoincrement()) @map("id")
+  projectId    Int      @map("project_id")
+  keywordName  String   @map("keyword_name")
+  parentId     Int?     @map("parent_id")
+  level        Int      @default(1) @map("level")
+  searchVolume Int      @default(0) @map("search_volume")
+  cpc          Int?     @map("cpc")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  project       Project          @relation(fields: [projectId], references: [id])
+  articles      KeywordArticle[]
+  parentKeyword Keyword?         @relation("ParentKeyword", fields: [parentId], references: [id])
+  childKeywords Keyword[]        @relation("ParentKeyword")
+
+  @@map("keyword")
+}
+
+// 記事（URL単位のコンテンツ）
+model Article {
+  id              Int      @id @default(autoincrement()) @map("id")
+  projectId       Int      @map("project_id")
+  articleUrl      String?  @map("article_url")
+  metaTitle       String?  @map("meta_title")
+  metaDescription String?  @map("meta_description")
+  isIndexable     Boolean? @map("is_indexable")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project    Project          @relation(fields: [projectId], references: [id])
+  keywords   KeywordArticle[]
+  innerLinks InnerLink[]      @relation("ArticleCriteria")
+  linkedFrom InnerLink[]      @relation("ArticleLinked")
+
+  @@map("article")
+}
+
+// キーワードと記事の中間テーブル
+model KeywordArticle {
+  keywordId Int      @map("keyword_id")
+  articleId Int      @map("article_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  keyword Keyword @relation(fields: [keywordId], references: [id])
+  article Article @relation(fields: [articleId], references: [id])
+
+  @@id([keywordId, articleId])
+  @@map("keyword_article")
+}
+
+// 内部リンク
+model InnerLink {
+  id                Int      @id @default(autoincrement()) @map("id")
+  type              String   @map("type")
+  criteriaArticleId Int      @map("criteria_article_id")
+  linkedArticleId   Int      @map("linked_article_id")
+  anchorText        String?  @map("anchor_text")
+  linkUrl           String   @map("link_url")
+  rel               String?  @map("rel")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  criteriaArticle Article @relation("ArticleCriteria", fields: [criteriaArticleId], references: [id])
+  linkedArticle   Article @relation("ArticleLinked", fields: [linkedArticleId], references: [id])
+
+  @@map("inner_link")
 }

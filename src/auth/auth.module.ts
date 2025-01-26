@@ -19,7 +19,7 @@ import { AuthController } from './auth.controller';
           secret: configService.get<string>('JWT_SECRET'),
           signOptions: {
             // 有効期間を設定
-            expiresIn: '1200s'
+            expiresIn: '100000s'
           },
         };
       },

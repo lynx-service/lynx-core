@@ -24,6 +24,8 @@ erDiagram
   role {
     string id PK
     string role_name
+    timestamp created_at
+    timestamp updated_at
   }
 
   %% プラン
@@ -105,6 +107,8 @@ erDiagram
   keyword_article {
     bigint keyword_id FK "keyword.id"
     bigint article_id FK "article.id"
+    timestamp created_at
+    timestamp updated_at
   }
 
   %% 内部リンク（発リンク・被リンク）
