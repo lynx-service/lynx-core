@@ -83,10 +83,10 @@ erDiagram
     bigint id PK
     bigint project_id FK "project.id"
     keywork_name string
+    keyword_purpose string
     bigint parent_id FK "keyword.id(自己参照)"
     int level "階層"
     int search_volume "検索ボリューム"
-    int cpc "広告単価"
     timestamp created_at
     timestamp updated_at
   }
