@@ -67,12 +67,23 @@ erDiagram
     timestamp updated_at
   }
 
+  %% ブックマークカテゴリ
+  bookmark_category {
+    bigint id PK
+    string category_name
+    timestamp created_at
+    timestamp updated_at
+  }
+
   %% ブックマーク情報
   bookmark {
     bigInt id PK
+    bigint bookmark_category_id FK "bookmark_category.id"
     string bookmark_url
     string bookmark_title
     string bookmark_description
+    timestamp created_at
+    timestamp updated_at
   }
 
   %% プロジェクト情報
