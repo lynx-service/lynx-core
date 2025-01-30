@@ -5,7 +5,8 @@ erDiagram
   workspace ||--o{ subscription : "1対N"
   plan ||--o{ subscription : "1対N"
   role ||--o{ user : "1対N"
-  user ||--o{ bookmark : "1対N"
+  user ||--o{ bookmark_category : "1対N"
+  bookmark_category ||--o{ bookmark : "1対N"
   project ||--o{ keyword: "1対N"
   project ||--o{ article: "1対N"
   keyword ||--|{ keyword_article: "1対N"
@@ -70,6 +71,7 @@ erDiagram
   %% ブックマークカテゴリ
   bookmark_category {
     bigint id PK
+    bigint user_id FK "user.id"
     string category_name
     timestamp created_at
     timestamp updated_at
