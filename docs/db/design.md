@@ -71,6 +71,7 @@ erDiagram
   %% ブックマークカテゴリ
   bookmark_category {
     bigint id PK
+    string function_id "機能ID"
     bigint user_id FK "user.id"
     string category_name
     timestamp created_at
