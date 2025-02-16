@@ -2,7 +2,7 @@ import type { Route } from "./+types/home";
 import { useLoaderData } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
-import { Button } from "@mui/material";
+import { Button, Container } from "@mui/material";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -36,9 +36,9 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 export default function Home() {
   const { data, user } = useLoaderData();
   return (
-    <>
-      <div className="text-gray-600 dark:text-gray-300">
-        <Button variant="contained">Contained</Button>
+    <Container className="text-gray-600 dark:text-gray-300 shadow-lg bg-gray-50 dark:bg-gray-900 rounded-lg py-10 px-5 h-full">
+      <>
+        <Button variant="contained" className="bg-emerald-600">Contained</Button>
         <div>
           {data}
         </div>
@@ -50,7 +50,7 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
-    </>
+      </>
+    </Container >
   );
 }

@@ -7,6 +7,7 @@ import {
   ScrollRestoration,
   useMatches,
   Form,
+  Link,
 } from "react-router";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/root";
@@ -85,26 +86,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <aside className="text-sm bg-white dark:bg-gray-900 w-40 min-h-screen border-r border-gray-200 dark:border-gray-700 hidden md:flex flex-col fixed left-0 top-16 shadow-lg">
               <nav className="flex flex-col h-full py-4 px-2">
                 <div className="flex-grow space-y-2">
-                  <a href="/" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
+                  <Link to="/" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Dashboard
-                  </a>
-                  <a href="/users" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
+                  </Link>
+                  <Link to="/users" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Users
-                  </a>
-                  <a href="/reports" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
+                  </Link>
+                  <Link to="/reports" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Reports
-                  </a>
-                  <a href="/settings" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
+                  </Link>
+                  <Link to="/settings" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Settings
-                  </a>
-                </div>
-
-                <div className="mt-56">
+                  </Link>
                   <Form method="post" action="/logout">
                     <button
                       type="submit"
                       className="w-full px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-zinc-50 hover:bg-red-700 text-left">
-                      ログアウト
+                      Logout
                     </button>
                   </Form>
                 </div>
@@ -113,7 +111,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Main Content */}
-          <main className={`flex-grow ${!isLoginPage ? "ml-40" : ""} bg-gray-50 dark:bg-gray-800 p-6`}>
+          <main className={`flex-grow ${!isLoginPage ? "ml-40" : ""} bg-gray-100 dark:bg-gray-800 p-6 text-gray-600 dark:text-gray-300`}>
             {children}
           </main>
         </div>
