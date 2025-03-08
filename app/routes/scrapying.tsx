@@ -2,7 +2,7 @@ import type { Route } from "./+types/home";
 import { useLoaderData } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
-import { Button, Container } from "@mui/material";
+import { Button, Container, Typography } from "@mui/material";
 import {
   Card,
   CardContent,
@@ -41,38 +41,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   return { data, user };
 };
 
-export default function Home() {
+export default function Scrapying() {
   const { data, user } = useLoaderData();
   return (
     <Container className="text-gray-600 dark:text-gray-300 shadow-lg bg-gray-50 dark:bg-gray-900 rounded-lg py-10 px-5 h-full">
-      <>
-        <Button variant="contained" className="bg-emerald-600">Contained</Button>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Card Title</CardTitle>
-            <CardDescription>Card Description</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p>Card Content</p>
-          </CardContent>
-          <CardFooter>
-            <p>Card Footer</p>
-          </CardFooter>
-        </Card>
-        
-        <div>
-          {data}
-        </div>
-        <div>
-          {user && (
-            <div>
-              <h1>ID：{user.id}</h1>
-              <p>メールアドレス：{user.email}</p>
-            </div>
-          )}
-        </div>
-      </>
+      <Typography variant="h5" component="h1" fontWeight="bold">
+        サイト分析
+      </Typography>
     </Container >
   );
 }

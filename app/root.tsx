@@ -89,6 +89,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <Link to="/" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Dashboard
                   </Link>
+                  <Link to="/scrapying" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
+                    サイト分析
+                  </Link>
                   <Link to="/users" className="block px-4 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700">
                     Users
                   </Link>
