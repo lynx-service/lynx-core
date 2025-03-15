@@ -95,14 +95,6 @@ export function ScrapingResultModal({
           ) : (
             <>
               <Button
-                onClick={startEditing}
-                variant="outline"
-                className="text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
-              >
-                <Pencil className="h-4 w-4 mr-1" />
-                編集する
-              </Button>
-              <Button
                 onClick={() => deleteItem(item.id)}
                 variant="outline"
                 className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"

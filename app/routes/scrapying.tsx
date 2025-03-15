@@ -57,22 +57,22 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
-  
+
   // フォームデータを取得
   const formData = await request.formData();
   const startUrl = formData.get("startUrl") as string;
   const targetClass = formData.get("targetClass") as string;
-  
+
   // バリデーション
   const result = scrapyRequestSchema.safeParse({ startUrl, targetClass });
   if (!result.success) {
-    return { 
-      ok: false, 
-      error: "入力データが不正です", 
-      validationErrors: result.error.format() 
+    return {
+      ok: false,
+      error: "入力データが不正です",
+      validationErrors: result.error.format()
     };
   }
-  
+
   try {
     // FastAPIエンドポイントを呼び出す
     const response = await fetch("http://localhost:8000/crawl/", {
@@ -88,25 +88,25 @@ export const action = async ({ request }: Route.ActionArgs) => {
     });
 
     console.log(response);
-    
+
     if (!response.ok) {
-      return { 
-        ok: false, 
-        error: `API error: ${response.status}` 
+      return {
+        ok: false,
+        error: `API error: ${response.status}`
       };
     }
-    
+
     const data = await response.json();
 
     console.log(data);
-    return { 
-      ok: true, 
-      data 
+    return {
+      ok: true,
+      data
     };
   } catch (err) {
-    return { 
-      ok: false, 
-      error: err instanceof Error ? err.message : "スクレイピング中にエラーが発生しました" 
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "スクレイピング中にエラーが発生しました"
     };
   }
 };
@@ -130,12 +130,12 @@ export default function Scrapying() {
   // フォーム送信時の処理
   const onSubmit = (values: ScrapyRequest) => {
     setIsSubmitting(true);
-    
+
     // FormDataを手動で作成
     const formData = new FormData();
     formData.append("startUrl", values.startUrl);
     formData.append("targetClass", values.targetClass);
-    
+
     // React Router v7のsubmit関数を使用してフォームを送信
     submit(formData, { method: "post" });
   };
@@ -144,28 +144,28 @@ export default function Scrapying() {
   useEffect(() => {
     if (actionData) {
       setIsSubmitting(false);
-      
-        // スクレイピングが成功した場合
+
+      // スクレイピングが成功した場合
       if (actionData.ok && actionData.data) {
         // スクレイピング結果をJotaiのatomに保存
         const scrapedData = actionData.data.scraped_data || [];
-        const editableResults: EditableScrapingResultItem[] = Array.isArray(scrapedData) 
+        const editableResults: EditableScrapingResultItem[] = Array.isArray(scrapedData)
           ? scrapedData.map((item: any) => ({
-              id: uuidv4(),
-              url: item.current_url || "",
-              title: item.title || "",
-              content: item.description || "",
-              index_status: item.index_status || "unknown",
-              internal_links: item.internal_links || [],
-              headings: item.headings || [],
-              isEditing: false
-            }))
+            id: uuidv4(),
+            url: item.current_url || "",
+            title: item.title || "",
+            content: item.description || "",
+            index_status: item.index_status || "unknown",
+            internal_links: item.internal_links || [],
+            headings: item.headings || [],
+            isEditing: false
+          }))
           : []; // データが配列でない場合は空配列を設定
-        
+
         setScrapingResults(editableResults);
 
         console.log("Scraped data:", editableResults);
-        
+
         // 結果表示画面に遷移
         if (editableResults.length > 0) {
           navigate("/scraping-results");
@@ -190,10 +190,10 @@ export default function Scrapying() {
           <p className="mt-3 max-w-md mx-auto text-base text-gray-500 dark:text-gray-300 sm:text-lg md:mt-5 md:text-xl">
             URLとクラス名を入力して、ウェブサイトの構造を分析します
           </p>
-          
+
           {hasResults && (
             <div className="mt-5">
-              <Button 
+              <Button
                 onClick={() => navigate("/scraping-results")}
                 className="bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border border-emerald-500 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-700 transition-all duration-200"
               >
@@ -221,10 +221,10 @@ export default function Scrapying() {
                           スクレイピングURL
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="https://example.com" 
+                          <Input
+                            placeholder="https://example.com"
                             className="h-12 px-4 rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all duration-200"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormDescription className="text-sm text-gray-500 dark:text-gray-400">
@@ -234,7 +234,7 @@ export default function Scrapying() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="targetClass"
@@ -244,10 +244,10 @@ export default function Scrapying() {
                           対象クラス名
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="content-class" 
+                          <Input
+                            placeholder="content-class"
                             className="h-12 px-4 rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all duration-200"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormDescription className="text-sm text-gray-500 dark:text-gray-400">
@@ -258,10 +258,10 @@ export default function Scrapying() {
                     )}
                   />
                 </div>
-                
+
                 <div className="pt-4">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={isSubmitting}
                     className={`w-full h-12 bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white font-medium rounded-lg text-base transition-all duration-300 transform hover:scale-[1.02] ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
@@ -280,7 +280,7 @@ export default function Scrapying() {
             </Form>
           </div>
         </div>
-        
+
         {actionData?.error && (
           <div className="mt-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 animate-fade-in">
             <div className="flex">
