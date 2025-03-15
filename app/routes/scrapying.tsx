@@ -19,13 +19,13 @@ import {
 import { Input } from "~/components/ui/input";
 import { useState, useEffect } from "react";
 import { useAtom } from "jotai";
-import { scrapingResultsAtom, type EditableScrapingResultItem } from "~/atoms/scrapingResults";
+import { scrapingResultsAtom, type EditableScrapingResultItem, type HeadingItem } from "~/atoms/scrapingResults";
 import { v4 as uuidv4 } from "uuid";
 
 export function meta({ }: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "サイト分析ツール" },
+    { name: "description", content: "ウェブサイトの構造を分析します" },
   ];
 }
 
@@ -35,6 +35,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
+  const refreshToken = session.get("refreshToken");
   const user = session.get("user");
 
   const res = await fetch("http://localhost:3000/hello", {
@@ -48,7 +49,7 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 
   const data: string = await res.text();
-  return { data, user };
+  return { data, user, token, refreshToken };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -57,6 +58,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
+  const refreshToken = session.get("refreshToken");
 
   // フォームデータを取得
   const formData = await request.formData();
@@ -98,7 +100,9 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
     return {
       ok: true,
-      data
+      data,
+      token,
+      refreshToken
     };
   } catch (err) {
     return {
@@ -108,9 +112,18 @@ export const action = async ({ request }: Route.ActionArgs) => {
   }
 };
 
+// 階層構造の見出しデータを処理する関数
+const processHeadings = (headings: any[]): HeadingItem[] => {
+  return headings.map(heading => ({
+    tag: heading.tag || "",
+    text: heading.text || "",
+    children: heading.children ? processHeadings(heading.children) : []
+  }));
+};
+
 export default function Scrapying() {
-  const { data, user } = useLoaderData();
-  const actionData = useActionData();
+  const { data, user, token, refreshToken } = useLoaderData<typeof loader>();
+  const actionData = useActionData<typeof action>();
   const submit = useSubmit();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,6 +150,11 @@ export default function Scrapying() {
     submit(formData, { method: "post" });
   };
 
+  // コンポーネントマウント時の処理
+  useEffect(() => {
+    // 必要に応じて初期化処理を行う
+  }, []);
+
   // actionの結果が返ってきたらisSubmittingをfalseに戻す
   useEffect(() => {
     if (actionData) {
@@ -154,17 +172,16 @@ export default function Scrapying() {
             content: item.description || "",
             index_status: item.index_status || "unknown",
             internal_links: item.internal_links || [],
-            headings: item.headings || [],
+            headings: processHeadings(item.headings || []),
             isEditing: false
           }))
           : []; // データが配列でない場合は空配列を設定
 
+        // 結果をatomに保存
         setScrapingResults(editableResults);
 
         // 結果表示画面に遷移
-        if (editableResults.length > 0) {
-          navigate("/scraping-results");
-        }
+        navigate("/scraping-results");
       }
     }
   }, [actionData, navigate, setScrapingResults]);

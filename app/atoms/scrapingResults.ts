@@ -10,12 +10,12 @@ export interface HeadingItem {
 // スクレイピング結果の型定義
 export interface ScrapingResultItem {
   id: string;
-  url: string;
+  url: string;          // current_url に対応
   title: string;
-  content: string;
-  index_status?: string;
-  internal_links?: string[];
-  headings?: HeadingItem[];
+  content: string;      // description に対応
+  index_status: string; // "index" または "noindex"
+  internal_links: string[];
+  headings: HeadingItem[];
 }
 
 // 編集可能なスクレイピング結果の型

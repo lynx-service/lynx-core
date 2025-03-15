@@ -2,8 +2,6 @@ import type { Route } from "./+types/home";
 import { useLoaderData } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
-import { useAtom } from "jotai";
-import { scrapingResultsAtom } from "~/atoms/scrapingResults";
 import {
   Card,
   CardContent,
@@ -14,6 +12,42 @@ import {
 import { Button } from "~/components/ui/button";
 import { useNavigate } from "react-router";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+// DBから取得するデータの型定義
+interface ScrapingArticle {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  projectId: number;
+  articleUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  isIndexable: boolean | null;
+}
+
+interface InnerLink {
+  linkedArticle: ScrapingArticle;
+  linkUrl: string;
+}
+
+interface Heading {
+  tag: string;
+  text: string;
+  children: Heading[];
+}
+
+interface ScrapingResult {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  projectId: number;
+  articleUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  isIndexable: boolean | null;
+  innerLinks: InnerLink[];
+  headings: Heading[];
+}
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -27,37 +61,48 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   await requireAuth(request);
 
   const session = await getSession(request.headers.get("Cookie"));
+  const token = session.get("token");
   const user = session.get("user");
 
-  // TODO: API経由でデータを取得するように修正
-  // const res = await fetch("http://localhost:3000/api/dashboard", {
-  //   headers: {
-  //     Authorization: `Bearer ${token}`,
-  //   }
-  // });
-  // if (!res.ok) {
-  //   throw new Response("Failed to fetch data", { status: res.status });
-  // }
-  // const data = await res.json();
-  // return { data, user };
-
-  return { user };
+  try {
+    const res = await fetch("http://localhost:3000/scraping", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
+    
+    if (!res.ok) {
+      throw new Error(`API error: ${res.status}`);
+    }
+    
+    const data = await res.json();
+    return { data, user, error: null };
+  } catch (error) {
+    console.error("Failed to fetch data:", error);
+    return { 
+      data: [], 
+      user, 
+      error: error instanceof Error ? error.message : "データの取得に失敗しました" 
+    };
+  }
 };
 
 export default function Home() {
-  const { user } = useLoaderData();
+  const { data, user, error } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const [results] = useAtom(scrapingResultsAtom);
+  
+  // DBから取得したデータを使用
+  const scrapingResults = data as ScrapingResult[];
 
   // インデックス状態の集計
   const indexStatusCount = {
-    index: results.filter(item => item.index_status === 'index').length,
-    noindex: results.filter(item => item.index_status !== 'index').length,
+    index: scrapingResults.filter(item => item.isIndexable === true).length,
+    noindex: scrapingResults.filter(item => item.isIndexable !== true).length,
   };
 
   // 内部リンク数の分布を計算
-  const internalLinksDistribution = results.reduce((acc, item) => {
-    const linkCount = item.internal_links?.length || 0;
+  const internalLinksDistribution = scrapingResults.reduce((acc, item) => {
+    const linkCount = item.innerLinks?.length || 0;
     const range = Math.floor(linkCount / 5) * 5; // 5リンクごとに区切る
     const key = `${range}-${range + 4}`;
     acc[key] = (acc[key] || 0) + 1;
@@ -93,6 +138,24 @@ export default function Home() {
           </Button>
         </div>
 
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">エラーが発生しました</h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  {error}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 概要カード */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
@@ -102,7 +165,7 @@ export default function Home() {
             </CardHeader>
             <CardContent>
               <p className="text-4xl font-bold text-gray-900 dark:text-white">
-                {results.length}
+                {scrapingResults.length}
               </p>
             </CardContent>
           </Card>

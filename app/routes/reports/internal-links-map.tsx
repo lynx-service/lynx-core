@@ -2,11 +2,45 @@ import type { Route } from "../+types/home";
 import { useLoaderData } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
-import { useAtom } from "jotai";
-import { scrapingResultsAtom } from "~/atoms/scrapingResults";
-import { useCallback, useMemo, useState, useEffect, memo } from "react";
+import { useCallback, useState, useEffect, memo } from "react";
 import { ReactFlow, Background, Controls, MiniMap, Position, applyNodeChanges, applyEdgeChanges, Panel, Handle } from '@xyflow/react';
 import type { Node, Edge, NodeChange, EdgeChange, NodeProps } from '@xyflow/react';
+
+// DBから取得するデータの型定義
+interface ScrapingArticle {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  projectId: number;
+  articleUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  isIndexable: boolean | null;
+}
+
+interface InnerLink {
+  linkedArticle: ScrapingArticle;
+  linkUrl: string;
+}
+
+interface Heading {
+  tag: string;
+  text: string;
+  children: Heading[];
+}
+
+interface ScrapingResult {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  projectId: number;
+  articleUrl: string | null;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  isIndexable: boolean | null;
+  innerLinks: InnerLink[];
+  headings: Heading[];
+}
 
 interface CustomNodeData {
   label: string;
@@ -48,21 +82,31 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   await requireAuth(request);
 
   const session = await getSession(request.headers.get("Cookie"));
+  const token = session.get("token");
   const user = session.get("user");
 
-  // TODO: API経由でデータを取得するように修正
-  // const res = await fetch("http://localhost:3000/api/internal-links-map", {
-  //   headers: {
-  //     Authorization: `Bearer ${token}`,
-  //   }
-  // });
-  // if (!res.ok) {
-  //   throw new Response("Failed to fetch data", { status: res.status });
-  // }
-  // const data = await res.json();
-  // return { data, user };
+  try {
+    // バックエンドAPIからスクレイピング結果を取得
+    const response = await fetch("http://localhost:3000/scraping", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      }
+    });
 
-  return { user };
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { user, data, error: null };
+  } catch (error) {
+    console.error("Failed to fetch scraping results:", error);
+    return { 
+      user, 
+      data: [], 
+      error: error instanceof Error ? error.message : "データの取得に失敗しました" 
+    };
+  }
 };
 
 // カスタムノードスタイル
@@ -82,8 +126,11 @@ const getNodeColor = (linkCount: number) => {
 };
 
 export default function InternalLinksMap() {
-  const { user } = useLoaderData();
-  const [results] = useAtom(scrapingResultsAtom);
+  const { user, data, error } = useLoaderData<typeof loader>();
+  const [apiError, setApiError] = useState<string | null>(error);
+
+  // DBから取得したデータを使用
+  const scrapingResults = data as ScrapingResult[];
 
   // ノードとエッジの生成
   const [nodes, setNodes] = useState<FlowNode[]>([]);
@@ -111,15 +158,18 @@ export default function InternalLinksMap() {
 
   // 初期のノードとエッジを生成
   useEffect(() => {
-    const nodes: FlowNode[] = results.map((item, index) => ({
-      id: item.id,
+    if (!scrapingResults || scrapingResults.length === 0) return;
+
+    // ノードの作成
+    const nodes: FlowNode[] = scrapingResults.map((item, index) => ({
+      id: item.id.toString(),
       position: {
-        x: Math.cos(index * (2 * Math.PI / results.length)) * 500 + 500,
-        y: Math.sin(index * (2 * Math.PI / results.length)) * 500 + 500,
+        x: Math.cos(index * (2 * Math.PI / scrapingResults.length)) * 500 + 500,
+        y: Math.sin(index * (2 * Math.PI / scrapingResults.length)) * 500 + 500,
       },
       data: {
-        label: item.title || 'タイトルなし',
-        linkCount: item.internal_links?.length || 0,
+        label: item.metaTitle || 'タイトルなし',
+        linkCount: item.innerLinks?.length || 0,
       },
       type: 'custom',
       sourcePosition: Position.Right,
@@ -127,17 +177,16 @@ export default function InternalLinksMap() {
       draggable: true,
     }));
 
+    // エッジの作成
     const edges: Edge[] = [];
-    results.forEach(item => {
-      if (item.internal_links) {
-        item.internal_links.forEach(link => {
-          // リンク先のノードを探す
-          const targetNode = results.find(result => result.url === link);
-          if (targetNode) {
+    scrapingResults.forEach(item => {
+      if (item.innerLinks && item.innerLinks.length > 0) {
+        item.innerLinks.forEach(link => {
+          if (link.linkedArticle) {
             edges.push({
-              id: `${item.id}-${targetNode.id}`,
-              source: item.id,
-              target: targetNode.id,
+              id: `${item.id}-${link.linkedArticle.id}`,
+              source: item.id.toString(),
+              target: link.linkedArticle.id.toString(),
               animated: true,
               style: { stroke: '#94a3b8' },
             });
@@ -148,7 +197,7 @@ export default function InternalLinksMap() {
 
     setNodes(nodes);
     setEdges(edges);
-  }, [results]);
+  }, [scrapingResults]);
 
   // ノードクリック時のハンドラ
   const onNodeClick = useCallback((event: React.MouseEvent, node: FlowNode) => {
@@ -168,6 +217,24 @@ export default function InternalLinksMap() {
           サイト内の内部リンクの関係性を可視化します
         </p>
       </div>
+
+      {apiError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800 dark:text-red-200">エラーが発生しました</h3>
+              <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                {apiError}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* フローチャート */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm relative" style={{ height: '70vh', width: '100%' }}>
