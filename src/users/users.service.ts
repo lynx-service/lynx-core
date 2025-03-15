@@ -18,6 +18,16 @@ export class UsersService {
   }
 
   /**
+   * 既存ユーザーにワークスペースとプロジェクトを作成して関連付ける
+   * 
+   * @param {number} userId ユーザーID
+   * @returns {Promise<User>} 更新されたユーザー情報
+   */
+  async createWorkspaceAndProjectForUser(userId: number): Promise<User> {
+    return this.userDao.createWorkspaceAndProjectForUser(userId);
+  }
+
+  /**
    * ログインのためのユーザー情報取得
    *
    * @param {string} email

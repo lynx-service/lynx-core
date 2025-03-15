@@ -22,7 +22,12 @@ export class AuthService {
     let user = await this.usersService.findOne(input.email);
 
     if (!user) {
+      // 新規ユーザー作成（ワークスペースとプロジェクトも同時に作成）
       user = await this.usersService.create(input);
+    } else if (!user.workspaceId) {
+      // ユーザーは存在するがワークスペースが関連付けられていない場合
+      // ワークスペースとプロジェクトを作成して関連付け
+      user = await this.usersService.createWorkspaceAndProjectForUser(user.id);
     }
 
     // リフレッシュトークンを生成して保存

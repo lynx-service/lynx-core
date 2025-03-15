@@ -32,12 +32,69 @@ export class UserDao {
 
   /**
    * ユーザーの新規登録
+   * ワークスペースとデフォルトプロジェクトも同時に作成
    *
    * @param {CreateUserDto} createUserDto
    * @returns {User}
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    return this.prismaService.user.create({ data: createUserDto });
+    return this.prismaService.$transaction(async (prisma) => {
+      // 1. ワークスペースを作成
+      const workspace = await prisma.workspace.create({
+        data: {},
+      });
+
+      // 2. デフォルトプロジェクトを作成
+      await prisma.project.create({
+        data: {
+          workspaceId: workspace.id,
+          projectUrl: 'https://example.com',
+          projectName: 'マイプロジェクト',
+          description: 'デフォルトプロジェクト',
+        },
+      });
+
+      // 3. ユーザーを作成し、ワークスペースと関連付け
+      return prisma.user.create({
+        data: {
+          ...createUserDto,
+          workspaceId: workspace.id,
+        },
+      });
+    });
+  }
+
+  /**
+   * 既存ユーザーにワークスペースとプロジェクトを作成して関連付ける
+   * 
+   * @param {number} userId ユーザーID
+   * @returns {Promise<User>} 更新されたユーザー情報
+   */
+  async createWorkspaceAndProjectForUser(userId: number): Promise<User> {
+    return this.prismaService.$transaction(async (prisma) => {
+      // 1. ワークスペースを作成
+      const workspace = await prisma.workspace.create({
+        data: {},
+      });
+
+      // 2. デフォルトプロジェクトを作成
+      await prisma.project.create({
+        data: {
+          workspaceId: workspace.id,
+          projectUrl: 'https://example.com',
+          projectName: 'マイプロジェクト',
+          description: 'デフォルトプロジェクト',
+        },
+      });
+
+      // 3. ユーザーを更新し、ワークスペースと関連付け
+      return prisma.user.update({
+        where: { id: userId },
+        data: {
+          workspaceId: workspace.id,
+        },
+      });
+    });
   }
 
   /**

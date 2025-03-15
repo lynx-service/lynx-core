@@ -150,8 +150,28 @@ model Article {
   keywords   KeywordArticle[]
   innerLinks InnerLink[]      @relation("ArticleCriteria")
   linkedFrom InnerLink[]      @relation("ArticleLinked")
+  headings   Heading[]        // 記事の見出し
 
   @@map("article")
+}
+
+// 見出し
+model Heading {
+  id        Int      @id @default(autoincrement()) @map("id")
+  articleId Int      @map("article_id")
+  tag       String   @map("tag") // h1, h2, h3, h4
+  text      String   @map("text")
+  level     Int      @map("level") // 1, 2, 3, 4
+  parentId  Int?     @map("parent_id")
+  order     Int      @map("order") // 表示順序
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  article   Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  parent    Heading?  @relation("HeadingHierarchy", fields: [parentId], references: [id])
+  children  Heading[] @relation("HeadingHierarchy")
+
+  @@map("heading")
 }
 
 // キーワードと記事の中間テーブル
