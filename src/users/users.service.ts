@@ -26,4 +26,28 @@ export class UsersService {
   async findOne(email: string): Promise<User | undefined> {
     return this.userDao.findByEmail(email);
   }
+
+  /**
+   * リフレッシュトークンを更新
+   *
+   * @param {string} userId
+   * @param {string} refreshToken
+   * @returns {Promise<User>}
+   */
+  async updateRefreshToken(
+    userId: number,
+    refreshToken: string,
+  ): Promise<User> {
+    return this.userDao.updateRefreshToken(userId, refreshToken);
+  }
+
+  /**
+   * リフレッシュトークンからユーザーを取得
+   * 
+   * @param {string} refreshToken
+   * @returns {Promise<User | undefined>}
+   */
+  async findByRefreshToken(refreshToken: string): Promise<User | undefined> {
+    return this.userDao.findByRefreshToken(refreshToken);
+  }
 }

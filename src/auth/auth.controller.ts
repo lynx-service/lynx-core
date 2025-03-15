@@ -1,4 +1,4 @@
-import { Controller, Request, Get, UseGuards, Redirect } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Req, Redirect } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -8,17 +8,24 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Request() req) {
-    // Guard redirects
+  async googleAuth() {
+    // GoogleストラテジーによってGoogleログインページにリダイレクト
   }
 
   @Get('google/callback')
-  @Redirect('http://localhost:5173')
   @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Request() req) {
-    const user = req.user;
-    const token = await this.authService.login(user);
-    const redirectUrl = `http://localhost:5173/auth/success?token=${token.access_token}`;
-    return { url: redirectUrl };
+  @Redirect()
+  async googleAuthRedirect(@Req() req) {
+    const tokens = await this.authService.login(req.user);
+    const frontendUrl = new URL('http://localhost:5173/auth/success');
+    frontendUrl.searchParams.set('token', tokens.accessToken);
+    frontendUrl.searchParams.set('refreshToken', tokens.refreshToken);
+    
+    return { url: frontendUrl.toString() };
+  }
+
+  @Post('refresh')
+  async refresh(@Body('refreshToken') refreshToken: string) {
+    return this.authService.refreshToken(refreshToken);
   }
 }

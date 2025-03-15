@@ -39,4 +39,33 @@ export class UserDao {
   async create(createUserDto: CreateUserDto): Promise<User> {
     return this.prismaService.user.create({ data: createUserDto });
   }
+
+  /**
+   * リフレッシュトークンを更新
+   * @param userId
+   * @param refreshToken
+   */
+  async updateRefreshToken(userId: number, refreshToken: string): Promise<User> {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshToken: refreshToken,
+      },
+    });
+  }
+
+  /**
+   * リフレッシュトークンからユーザーを取得
+   * @param refreshToken
+   * @returns {Promise<User | undefined>}
+   */
+  async findByRefreshToken(refreshToken: string): Promise<User | undefined> {
+    return this.prismaService.user.findFirst({
+      where: {
+        refreshToken: refreshToken,
+      },
+    });
+  }
 }
