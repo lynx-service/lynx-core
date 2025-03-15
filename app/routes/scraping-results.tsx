@@ -252,8 +252,8 @@ export default function ScrapingResults() {
           isOpen={isDialogOpen}
           setOpen={setIsDialogOpen}
           isEditing={isEditing}
-          startEditing={() => setIsEditing(true)}
-          cancelEditing={() => setIsEditing(false)}
+          startEditing={startEditing}
+          cancelEditing={cancelEditing}
           saveEditing={() => {
             saveEditing();
             setIsDialogOpen(false);

@@ -8,7 +8,7 @@ import {
   DialogClose,
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
-import { Pencil, Trash2, X } from "lucide-react";
+import { Pencil, Save, Trash2, X } from "lucide-react";
 import type { EditableScrapingResultItem, HeadingItem } from "~/atoms/scrapingResults";
 import { ScrapingResultModalContent } from "./ScrapingResultModalContent";
 
@@ -66,10 +66,13 @@ export function ScrapingResultModal({
 
         <ScrapingResultModalContent
           item={item}
+          isEditing={isEditing}
+          startEditing={startEditing}
           updateEditingItem={updateEditingItem}
           updateInternalLink={updateInternalLink}
           addInternalLink={addInternalLink}
           removeInternalLink={removeInternalLink}
+          handleHeadingUpdate={handleHeadingUpdate}
           onSave={saveEditing}
           onCancel={cancelEditing}
         />
@@ -82,6 +85,7 @@ export function ScrapingResultModal({
                 variant="outline"
                 className="text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
               >
+                <Save className="h-4 w-4 mr-1" />
                 保存
               </Button>
               <Button
@@ -89,6 +93,7 @@ export function ScrapingResultModal({
                 variant="outline"
                 className="text-gray-600 dark:text-gray-400 border-gray-600 dark:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30"
               >
+                <X className="h-4 w-4 mr-1" />
                 キャンセル
               </Button>
             </>
