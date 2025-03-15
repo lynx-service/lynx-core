@@ -1,8 +1,8 @@
 import { createCookieSessionStorage } from "react-router";
 
-const sessionSecret = "testtest";
+const sessionSecret = process.env.SESSION_SECRET;
 if (!sessionSecret) {
-  throw new Error("SESSION_SECRET must be set");
+  throw new Error("SESSION_SECRET must be set in environment variables");
 }
 
 export const sessionStorage = createCookieSessionStorage({
