@@ -87,8 +87,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
       }),
     });
 
-    console.log(response);
-
     if (!response.ok) {
       return {
         ok: false,
@@ -98,7 +96,6 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
     const data = await response.json();
 
-    console.log(data);
     return {
       ok: true,
       data
@@ -163,8 +160,6 @@ export default function Scrapying() {
           : []; // データが配列でない場合は空配列を設定
 
         setScrapingResults(editableResults);
-
-        console.log("Scraped data:", editableResults);
 
         // 結果表示画面に遷移
         if (editableResults.length > 0) {
