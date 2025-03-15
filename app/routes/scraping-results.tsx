@@ -32,6 +32,7 @@ export default function ScrapingResults() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingItem, setEditingItem] = useState<EditableScrapingResultItem | null>(null);
 
   // 項目の削除
   const deleteItem = (id: string) => {
@@ -41,74 +42,64 @@ export default function ScrapingResults() {
 
   // 編集モードの開始
   const startEditing = () => {
-    setIsEditing(true);
+    if (selectedItemId) {
+      const item = results.find(item => item.id === selectedItemId);
+      if (item) {
+        setEditingItem({ ...item });
+        setIsEditing(true);
+      }
+    }
   };
 
   // 編集モードのキャンセル
   const cancelEditing = () => {
+    setEditingItem(null);
     setIsEditing(false);
   };
 
   // 編集内容の保存
   const saveEditing = () => {
-    setIsEditing(false);
+    if (editingItem) {
+      setResults(prev =>
+        prev.map(item =>
+          item.id === editingItem.id ? editingItem : item
+        )
+      );
+      setEditingItem(null);
+      setIsEditing(false);
+    }
   };
 
   // 編集中のアイテムの更新
   const updateEditingItem = (field: keyof EditableScrapingResultItem, value: any) => {
-    if (selectedItemId) {
-      setResults(prev =>
-        prev.map(item =>
-          item.id === selectedItemId ? { ...item, [field]: value } : item
-        )
-      );
+    if (editingItem) {
+      setEditingItem({ ...editingItem, [field]: value });
     }
   };
 
   // 内部リンクの更新
   const updateInternalLink = (index: number, value: string) => {
-    if (selectedItemId) {
-      setResults(prev =>
-        prev.map(item => {
-          if (item.id === selectedItemId && item.internal_links) {
-            const newLinks = [...item.internal_links];
-            newLinks[index] = value;
-            return { ...item, internal_links: newLinks };
-          }
-          return item;
-        })
-      );
+    if (editingItem && editingItem.internal_links) {
+      const newLinks = [...editingItem.internal_links];
+      newLinks[index] = value;
+      setEditingItem({ ...editingItem, internal_links: newLinks });
     }
   };
 
   // 内部リンクの追加
   const addInternalLink = () => {
-    if (selectedItemId) {
-      setResults(prev =>
-        prev.map(item => {
-          if (item.id === selectedItemId) {
-            const newLinks = item.internal_links ? [...item.internal_links, ""] : [""];
-            return { ...item, internal_links: newLinks };
-          }
-          return item;
-        })
-      );
+    if (editingItem) {
+      const newLinks = editingItem.internal_links ? [...editingItem.internal_links, ""] : [""];
+      setEditingItem({ ...editingItem, internal_links: newLinks });
     }
   };
 
   // 内部リンクの削除
   const removeInternalLink = (index: number) => {
-    if (selectedItemId) {
-      setResults(prev =>
-        prev.map(item => {
-          if (item.id === selectedItemId && item.internal_links) {
-            const newLinks = [...item.internal_links];
-            newLinks.splice(index, 1);
-            return { ...item, internal_links: newLinks };
-          }
-          return item;
-        })
-      );
+    if (editingItem && editingItem.internal_links) {
+      const newLinks = [...editingItem.internal_links];
+      newLinks.splice(index, 1);
+      setEditingItem({ ...editingItem, internal_links: newLinks });
     }
   };
 
@@ -136,21 +127,14 @@ export default function ScrapingResults() {
 
   // 見出しの更新ハンドラー
   const handleHeadingUpdate = (path: number[], field: keyof HeadingItem, value: string) => {
-    if (selectedItemId) {
-      setResults(prev =>
-        prev.map(item => {
-          if (item.id === selectedItemId && item.headings) {
-            const newHeadings = updateHeading(item.headings, path, field, value);
-            return { ...item, headings: newHeadings };
-          }
-          return item;
-        })
-      );
+    if (editingItem && editingItem.headings) {
+      const newHeadings = updateHeading(editingItem.headings, path, field, value);
+      setEditingItem({ ...editingItem, headings: newHeadings });
     }
   };
 
   // 選択されているアイテムを取得
-  const selectedItem = results.find(item => item.id === selectedItemId);
+  const selectedItem = editingItem || results.find(item => item.id === selectedItemId);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
