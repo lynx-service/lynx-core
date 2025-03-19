@@ -19,7 +19,7 @@ import {
 import { Input } from "~/components/ui/input";
 import { useState, useEffect } from "react";
 import { useAtom } from "jotai";
-import { scrapingResultsAtom, type EditableScrapingResultItem, type HeadingItem } from "~/atoms/scrapingResults";
+import { scrapingResultsAtom, type EditableScrapingResultItem, type HeadingItem, type InternalLinkItem } from "~/atoms/scrapingResults";
 import { v4 as uuidv4 } from "uuid";
 
 export function meta({ }: Route.MetaArgs) {
@@ -59,6 +59,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
   const refreshToken = session.get("refreshToken");
+  const user = session.get("user");
 
   // フォームデータを取得
   const formData = await request.formData();
@@ -81,13 +82,15 @@ export const action = async ({ request }: Route.ActionArgs) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
+        // "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify({
         start_url: result.data.startUrl,
         target_class: result.data.targetClass
       }),
     });
+
+    console.log(response);
 
     if (!response.ok) {
       return {
@@ -150,11 +153,6 @@ export default function Scrapying() {
     submit(formData, { method: "post" });
   };
 
-  // コンポーネントマウント時の処理
-  useEffect(() => {
-    // 必要に応じて初期化処理を行う
-  }, []);
-
   // actionの結果が返ってきたらisSubmittingをfalseに戻す
   useEffect(() => {
     if (actionData) {
@@ -171,7 +169,7 @@ export default function Scrapying() {
             title: item.title || "",
             content: item.description || "",
             index_status: item.index_status || "unknown",
-            internal_links: item.internal_links || [],
+            internal_links: item.internal_links?.map((link: string) => ({ url: link } as InternalLinkItem)) || [],
             headings: processHeadings(item.headings || []),
             isEditing: false
           }))
