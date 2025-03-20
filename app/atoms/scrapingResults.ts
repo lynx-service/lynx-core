@@ -14,15 +14,26 @@ export interface InternalLinkItem {
   url: string;  // リンク先のURL
 }
 
-// スクレイピング結果の型定義
+// スクレイピング結果の簡略型定義（新しいコンポーネント用）
+export interface SimpleScrapingResultItem {
+  id: string;
+  url: string;
+  title: string;
+  content: string;
+  index_status: string;
+  internal_links_count: number;
+  headings_count: number;
+}
+
+// 既存の型定義（互換性のために残す）
 export interface ScrapingResultItem {
   id: string;
-  originalId?: number;  // DBから取得した元のID（number型）
-  url: string;          // current_url に対応
+  originalId?: number;
+  url: string;
   title: string;
-  content: string;      // description に対応
-  index_status: string; // "index" または "noindex"
-  internal_links: InternalLinkItem[] | string[];  // 内部リンク（オブジェクトまたは文字列の配列）
+  content: string;
+  index_status: string;
+  internal_links: InternalLinkItem[] | string[];
   headings: HeadingItem[];
 }
 
@@ -36,3 +47,6 @@ export const scrapingResultsAtom = atom<EditableScrapingResultItem[]>([]);
 
 // 現在編集中の項目のIDを保持するatom
 export const editingItemIdAtom = atom<string | null>(null);
+
+// 簡略化されたスクレイピング結果を保持するatom
+export const simpleScrapingResultsAtom = atom<SimpleScrapingResultItem[]>([]);

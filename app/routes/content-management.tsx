@@ -3,8 +3,8 @@ import { useLoaderData, useNavigate } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
 import { useState } from "react";
-import { ScrapingResultModal } from "~/components/scraping/ScrapingResultModal";
-import { convertToEditableItem } from "~/utils/scraping-utils";
+import { ArticleModal } from "~/components/article/ArticleModal";
+import { ArticleList } from "~/components/article/ArticleList";
 import {
   updateArticle,
   updateInternalLinks,
@@ -12,7 +12,7 @@ import {
   deleteItem,
   deleteInternalLink
 } from "~/services/scraping-api.service";
-import type { EditableScrapingResultItem, HeadingItem, InternalLinkItem } from "~/atoms/scrapingResults";
+import type { ArticleItem, HeadingItem, InternalLinkItem } from "~/atoms/articles";
 
 // shadcn/uiコンポーネント
 import {
@@ -25,21 +25,17 @@ import {
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Skeleton } from "~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Badge } from "~/components/ui/badge";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "~/components/ui/tooltip";
-import { ClientOnly } from "~/components/ui/client-only";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { AlertTriangle, ArrowLeft, Save, FileText, ExternalLink, Edit, Trash2, Info, Search, Database } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Edit, Database } from "lucide-react";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -84,19 +80,56 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 };
 
+// DBから取得したデータをArticleItem形式に変換する関数
+const convertToArticleItem = (item: any): ArticleItem => {
+  // 内部リンクをInternalLinkItem形式に変換
+  const internalLinks: InternalLinkItem[] = Array.isArray(item.internal_links)
+    ? item.internal_links.map((link: any) => {
+        if (typeof link === 'string') {
+          return { url: link };
+        }
+        return { id: link.id, url: link.url };
+      })
+    : [];
+
+  // 見出しをHeadingItem形式に変換（再帰的に処理）
+  const convertHeadings = (headings: any[]): HeadingItem[] => {
+    if (!headings || !Array.isArray(headings)) return [];
+    
+    return headings.map(h => ({
+      id: h.id,
+      tag: h.tag || '',
+      text: h.text || '',
+      children: convertHeadings(h.children || [])
+    }));
+  };
+
+  return {
+    id: item.id || String(Math.random()),
+    originalId: item.originalId || item.id,
+    url: item.url || '',
+    title: item.title || '',
+    content: item.content || item.description || '',
+    index_status: item.index_status || 'unknown',
+    internal_links: internalLinks,
+    headings: convertHeadings(item.headings || []),
+    isEditing: false
+  };
+};
+
 export default function ContentManagement() {
   const { user, token, refreshToken, contentItems, error } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editingItem, setEditingItem] = useState<EditableScrapingResultItem | null>(null);
+  const [editingItem, setEditingItem] = useState<ArticleItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(error);
 
-  // DBから取得したデータをEditableScrapingResultItem形式に変換
-  const results = contentItems && Array.isArray(contentItems) && contentItems.length > 0
-    ? contentItems.map(convertToEditableItem)
+  // DBから取得したデータをArticleItem形式に変換
+  const articles = contentItems && Array.isArray(contentItems) && contentItems.length > 0
+    ? contentItems.map(convertToArticleItem)
     : [];
 
   // 項目の削除
@@ -106,7 +139,7 @@ export default function ContentManagement() {
       return false;
     }
 
-    const item = results.find(item => item.id === id);
+    const item = articles.find(item => item.id === id);
     if (!item || !item.originalId) {
       setApiError("削除する項目が見つかりません");
       return false;
@@ -135,7 +168,7 @@ export default function ContentManagement() {
   // 編集モードの開始
   const startEditing = () => {
     if (selectedItemId) {
-      const item = results.find(item => item.id === selectedItemId);
+      const item = articles.find(item => item.id === selectedItemId);
       if (item) {
         setEditingItem({ ...item });
         setIsEditing(true);
@@ -150,7 +183,7 @@ export default function ContentManagement() {
   };
 
   // 編集中のアイテムの更新
-  const updateEditingItem = (field: keyof EditableScrapingResultItem, value: any) => {
+  const updateEditingItem = (field: keyof ArticleItem, value: any) => {
     if (editingItem) {
       setEditingItem({ ...editingItem, [field]: value });
     }
@@ -159,12 +192,8 @@ export default function ContentManagement() {
   // 内部リンクの更新
   const updateInternalLink = (index: number, value: string) => {
     if (editingItem && editingItem.internal_links) {
-      const newLinks = [...editingItem.internal_links] as InternalLinkItem[];
-      if (typeof newLinks[index] === 'string') {
-        newLinks[index] = { url: value };
-      } else {
-        (newLinks[index] as InternalLinkItem).url = value;
-      }
+      const newLinks = [...editingItem.internal_links];
+      newLinks[index].url = value;
       setEditingItem({ ...editingItem, internal_links: newLinks });
     }
   };
@@ -172,7 +201,7 @@ export default function ContentManagement() {
   // 内部リンクの追加
   const addInternalLink = () => {
     if (editingItem) {
-      const newLinks = [...(editingItem.internal_links as InternalLinkItem[]), { url: "" }];
+      const newLinks = [...editingItem.internal_links, { url: "" }];
       setEditingItem({ ...editingItem, internal_links: newLinks });
     }
   };
@@ -180,11 +209,11 @@ export default function ContentManagement() {
   // 内部リンクの削除
   const removeInternalLink = (index: number) => {
     if (editingItem && editingItem.internal_links) {
-      const newLinks = [...editingItem.internal_links] as InternalLinkItem[];
-
+      const newLinks = [...editingItem.internal_links];
+      
       // DBに保存されている内部リンクの場合、APIで削除
       const link = newLinks[index];
-      if (typeof link !== 'string' && link.id && token) {
+      if (link.id && token) {
         deleteInternalLink(token, link.id).catch(error => {
           console.error("Failed to delete internal link:", error);
         });
@@ -210,7 +239,7 @@ export default function ContentManagement() {
   };
 
   // 選択されているアイテムを取得
-  const selectedItem = results.find(item => item.id === selectedItemId);
+  const selectedItem = editingItem || articles.find(item => item.id === selectedItemId);
 
   // ダッシュボードに戻る
   const handleBack = () => {
@@ -225,7 +254,7 @@ export default function ContentManagement() {
   };
 
   // 基本情報の更新
-  const handleUpdateBasicInfo = async (item: EditableScrapingResultItem) => {
+  const handleUpdateBasicInfo = async (item: ArticleItem) => {
     if (!token) {
       setApiError("認証情報が見つかりません");
       return;
@@ -247,7 +276,7 @@ export default function ContentManagement() {
   };
 
   // 内部リンクの更新
-  const handleUpdateInternalLinks = async (item: EditableScrapingResultItem) => {
+  const handleUpdateInternalLinks = async (item: ArticleItem) => {
     if (!token) {
       setApiError("認証情報が見つかりません");
       return;
@@ -289,7 +318,7 @@ export default function ContentManagement() {
   };
 
   // 見出しの更新
-  const handleUpdateHeadings = async (item: EditableScrapingResultItem) => {
+  const handleUpdateHeadings = async (item: ArticleItem) => {
     if (!token) {
       setApiError("認証情報が見つかりません");
       return;
@@ -322,7 +351,7 @@ export default function ContentManagement() {
               </span>
             </h1>
             <p className="text-muted-foreground">
-              保存された{results.length}件のコンテンツを編集・管理できます
+              保存された{articles.length}件のコンテンツを編集・管理できます
             </p>
           </div>
 
@@ -350,7 +379,7 @@ export default function ContentManagement() {
         )}
 
         {/* 結果表示 */}
-        {results.length === 0 ? (
+        {articles.length === 0 ? (
           <Card className="text-center p-8">
             <CardContent className="pt-6">
               <p className="text-muted-foreground">コンテンツがありません</p>
@@ -384,48 +413,11 @@ export default function ContentManagement() {
             </div>
 
             <TabsContent value="grid" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {results.map(item => (
-                  <Card
-                    key={item.id}
-                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col"
-                    onClick={() => handleSelectItem(item.id)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg line-clamp-2">
-                        {item.title || "タイトルなし"}
-                      </CardTitle>
-                      <CardDescription className="truncate">
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {item.url}
-                        </a>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {item.content || "コンテンツなし"}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="border-t pt-3 flex justify-between bg-muted/50">
-                      <Badge
-                        variant={item.index_status === "index" ? "default" : "destructive"}
-                        className={item.index_status === "index" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : ""}
-                      >
-                        {item.index_status === "index" ? "インデックス" : "ノーインデックス"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {item.internal_links?.length || 0} リンク
-                      </span>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+              <ArticleList
+                articles={articles}
+                onSelectItem={handleSelectItem}
+                isLoading={isLoading}
+              />
             </TabsContent>
 
             <TabsContent value="table" className="mt-0">
@@ -442,7 +434,7 @@ export default function ContentManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {results.map(item => (
+                      {articles.map(item => (
                         <TableRow key={item.id} className="cursor-pointer hover:bg-muted/50">
                           <TableCell className="font-medium max-w-[200px] truncate">
                             {item.title || "タイトルなし"}
@@ -488,7 +480,7 @@ export default function ContentManagement() {
 
         {/* モーダル */}
         {selectedItem && (
-          <ScrapingResultModal
+          <ArticleModal
             isOpen={isDialogOpen}
             setOpen={setIsDialogOpen}
             item={selectedItem}

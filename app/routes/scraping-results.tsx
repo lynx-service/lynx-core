@@ -3,21 +3,11 @@ import { useLoaderData, useNavigate } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
 import { useAtom } from "jotai";
-import { scrapingResultsAtom, type EditableScrapingResultItem, type HeadingItem, type InternalLinkItem } from "~/atoms/scrapingResults";
+import { scrapingResultsAtom, type EditableScrapingResultItem, type SimpleScrapingResultItem } from "~/atoms/scrapingResults";
 import { useState, useEffect } from "react";
-import { ScrapingResultModal } from "~/components/scraping/ScrapingResultModal";
-import { ScrapingResultHeader } from "~/components/scraping/ScrapingResultHeader";
-import { ScrapingResultList } from "~/components/scraping/ScrapingResultList";
-import { convertToEditableItem, getInternalLinkUrl } from "~/utils/scraping-utils";
-import {
-  fetchResults,
-  saveAllResults,
-  updateArticle,
-  updateInternalLinks,
-  updateHeadings,
-  deleteItem,
-  deleteInternalLink
-} from "~/services/scraping-api.service";
+import { ScrapingResultSimpleModal } from "~/components/scraping/ScrapingResultSimpleModal";
+import { ScrapingResultSimpleList } from "~/components/scraping/ScrapingResultSimpleList";
+import { saveAllResults, fetchResults } from "~/services/scraping-api.service";
 
 // shadcn/uiコンポーネント
 import {
@@ -30,26 +20,22 @@ import {
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Skeleton } from "~/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Badge } from "~/components/ui/badge";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "~/components/ui/tooltip";
-import { ClientOnly } from "~/components/ui/client-only";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { AlertTriangle, ArrowLeft, Save, FileText, ExternalLink, Edit, Trash2, Info, Search } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Save, FileText, Search } from "lucide-react";
 
 export function meta({ }: Route.MetaArgs) {
   return [
     { title: "スクレイピング結果" },
-    { name: "description", content: "スクレイピング結果の編集" },
+    { name: "description", content: "スクレイピング結果の閲覧" },
   ];
 }
 
@@ -89,16 +75,28 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
   }
 };
 
+// EditableScrapingResultItemからSimpleScrapingResultItemへの変換関数
+const convertToSimpleItem = (item: EditableScrapingResultItem): SimpleScrapingResultItem => {
+  return {
+    id: item.id,
+    url: item.url,
+    title: item.title,
+    content: item.content,
+    index_status: item.index_status,
+    internal_links_count: Array.isArray(item.internal_links) ? item.internal_links.length : 0,
+    headings_count: Array.isArray(item.headings) ? item.headings.length : 0
+  };
+};
+
 export default function ScrapingResults() {
   const { user, token, refreshToken, scrapingResults, error } = useLoaderData<typeof loader>();
   const [results, setResults] = useAtom(scrapingResultsAtom);
   const navigate = useNavigate();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingItem, setEditingItem] = useState<EditableScrapingResultItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(error);
+  const [simpleResults, setSimpleResults] = useState<SimpleScrapingResultItem[]>([]);
 
   // スクレイピング結果をバックエンドに保存する関数
   const saveAllResultsToBackend = async () => {
@@ -127,7 +125,11 @@ export default function ScrapingResults() {
     }
 
     if (refreshedData && Array.isArray(refreshedData) && refreshedData.length > 0) {
-      const editableResults = refreshedData.map(convertToEditableItem);
+      const editableResults = refreshedData.map(item => ({
+        ...item,
+        isEditing: false
+      })) as EditableScrapingResultItem[];
+      
       setResults(editableResults);
     }
 
@@ -139,135 +141,25 @@ export default function ScrapingResults() {
   useEffect(() => {
     if (scrapingResults && Array.isArray(scrapingResults) && scrapingResults.length > 0) {
       // DBから取得したデータをEditableScrapingResultItem形式に変換
-      const editableResults = scrapingResults.map(convertToEditableItem);
-
+      const editableResults = scrapingResults.map(item => ({
+        ...item,
+        isEditing: false
+      })) as EditableScrapingResultItem[];
+      
       // DBから取得したデータを設定
       setResults(editableResults);
     }
   }, [scrapingResults, setResults]);
 
-  // 項目の削除
-  const handleDeleteItem = async (id: string) => {
-    if (!token) {
-      setApiError("認証情報が見つかりません");
-      return false;
+  // EditableScrapingResultItemからSimpleScrapingResultItemへの変換
+  useEffect(() => {
+    if (results.length > 0) {
+      const simple = results.map(convertToSimpleItem);
+      setSimpleResults(simple);
+    } else {
+      setSimpleResults([]);
     }
-
-    const item = results.find(item => item.id === id);
-    if (!item || !item.originalId) {
-      setApiError("削除する項目が見つかりません");
-      return false;
-    }
-
-    setIsLoading(true);
-
-    const { error: deleteError } = await deleteItem(token, item.originalId);
-
-    if (deleteError) {
-      setApiError(deleteError);
-      setIsLoading(false);
-      return false;
-    }
-
-    // 削除後にatomから削除
-    setResults(prev => prev.filter(item => item.id !== id));
-    setIsDialogOpen(false);
-    setIsLoading(false);
-
-    return true;
-  };
-
-  // 編集モードの開始
-  const startEditing = () => {
-    if (selectedItemId) {
-      const item = results.find(item => item.id === selectedItemId);
-      if (item) {
-        setEditingItem({ ...item });
-        setIsEditing(true);
-      }
-    }
-  };
-
-  // 編集モードのキャンセル
-  const cancelEditing = () => {
-    setEditingItem(null);
-    setIsEditing(false);
-  };
-
-
-  // 編集中のアイテムの更新
-  const updateEditingItem = (field: keyof EditableScrapingResultItem, value: any) => {
-    if (editingItem) {
-      setEditingItem({ ...editingItem, [field]: value });
-    }
-  };
-
-  // 内部リンクの更新
-  const updateInternalLink = (index: number, value: string) => {
-    if (editingItem && editingItem.internal_links) {
-      const newLinks = [...editingItem.internal_links] as InternalLinkItem[];
-      if (typeof newLinks[index] === 'string') {
-        newLinks[index] = { url: value };
-      } else {
-        (newLinks[index] as InternalLinkItem).url = value;
-      }
-      setEditingItem({ ...editingItem, internal_links: newLinks });
-    }
-  };
-
-  // 内部リンクの追加
-  const addInternalLink = () => {
-    if (editingItem) {
-      const newLinks = [...(editingItem.internal_links as InternalLinkItem[]), { url: "" }];
-      setEditingItem({ ...editingItem, internal_links: newLinks });
-    }
-  };
-
-  // 内部リンクの削除
-  const removeInternalLink = (index: number) => {
-    if (editingItem && editingItem.internal_links) {
-      const newLinks = [...editingItem.internal_links] as InternalLinkItem[];
-
-      console.log("removeInternalLink", newLinks, index);
-
-      // DBに保存されている内部リンクの場合、APIで削除
-      const link = newLinks[index];
-      if (typeof link !== 'string' && link.id && token) {
-        fetch("http://localhost:3000/scraping/internal-link", {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            id: link.id
-          }),
-        }).catch(error => {
-          console.error("Failed to delete internal link:", error);
-        });
-      }
-
-      newLinks.splice(index, 1);
-      setEditingItem({ ...editingItem, internal_links: newLinks });
-
-      // 成功した場合にアラートを表示
-      alert("内部リンクを削除しました");
-    }
-  };
-
-  // 見出しの更新ハンドラー
-  const handleHeadingUpdate = (path: number[], field: keyof HeadingItem, value: string) => {
-    if (editingItem && editingItem.headings) {
-      // 見出しの更新処理は複雑なため、ユーティリティ関数を使用
-      import("~/utils/scraping-utils").then(({ updateHeadingRecursive }) => {
-        const newHeadings = updateHeadingRecursive(editingItem.headings, path, field, value);
-        setEditingItem({ ...editingItem, headings: newHeadings });
-      });
-    }
-  };
-
-  // 選択されているアイテムを取得
-  const selectedItem = editingItem || results.find(item => item.id === selectedItemId);
+  }, [results]);
 
   // スクレイピング画面に戻る
   const handleBack = () => {
@@ -277,83 +169,11 @@ export default function ScrapingResults() {
   // 項目を選択
   const handleSelectItem = (id: string) => {
     setSelectedItemId(id);
-    setIsEditing(false);
     setIsDialogOpen(true);
   };
 
-  // 基本情報の更新
-  const handleUpdateBasicInfo = async (item: EditableScrapingResultItem) => {
-    if (!token) {
-      setApiError("認証情報が見つかりません");
-      return;
-    }
-
-    setIsLoading(true);
-    const { error } = await updateArticle(token, item);
-    setIsLoading(false);
-
-    if (error) {
-      setApiError(error);
-      return;
-    }
-
-    alert("基本情報を更新しました");
-  };
-
-  // 内部リンクの更新
-  const handleUpdateInternalLinks = async (item: EditableScrapingResultItem) => {
-    if (!token) {
-      setApiError("認証情報が見つかりません");
-      return;
-    }
-
-    setIsLoading(true);
-    const { error } = await updateInternalLinks(token, item);
-    setIsLoading(false);
-
-    if (error) {
-      setApiError(error);
-      return;
-    }
-
-    alert("内部リンクを更新しました");
-  };
-
-  // 内部リンクの削除
-  const handleDeleteInternalLink = async (linkId: number) => {
-    if (!token) {
-      setApiError("認証情報が見つかりません");
-      return;
-    }
-
-    setIsLoading(true);
-    const { error } = await deleteInternalLink(token, linkId);
-    setIsLoading(false);
-
-    if (error) {
-      setApiError(error);
-      return;
-    }
-  };
-
-  // 見出しの更新
-  const handleUpdateHeadings = async (item: EditableScrapingResultItem) => {
-    if (!token) {
-      setApiError("認証情報が見つかりません");
-      return;
-    }
-
-    setIsLoading(true);
-    const { error } = await updateHeadings(token, item);
-    setIsLoading(false);
-
-    if (error) {
-      setApiError(error);
-      return;
-    }
-
-    alert("見出し構造を更新しました");
-  };
+  // 選択されているアイテムを取得
+  const selectedItem = simpleResults.find(item => item.id === selectedItemId);
 
   return (
     <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
@@ -367,7 +187,7 @@ export default function ScrapingResults() {
               </span>
             </h1>
             <p className="text-muted-foreground">
-              取得した{results.length}件のデータを閲覧・保存できます
+              取得した{simpleResults.length}件のデータを閲覧・保存できます
             </p>
           </div>
 
@@ -416,7 +236,7 @@ export default function ScrapingResults() {
         )}
 
         {/* 結果表示 */}
-        {results.length === 0 ? (
+        {simpleResults.length === 0 ? (
           <Card className="text-center p-8">
             <CardContent className="pt-6">
               <p className="text-muted-foreground">スクレイピング結果がありません</p>
@@ -450,48 +270,11 @@ export default function ScrapingResults() {
             </div>
             
             <TabsContent value="grid" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {results.map(item => (
-                  <Card 
-                    key={item.id} 
-                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col"
-                    onClick={() => handleSelectItem(item.id)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg line-clamp-2">
-                        {item.title || "タイトルなし"}
-                      </CardTitle>
-                      <CardDescription className="truncate">
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {item.url}
-                        </a>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex-grow">
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {item.content || "コンテンツなし"}
-                      </p>
-                    </CardContent>
-                    <CardFooter className="border-t pt-3 flex justify-between bg-muted/50">
-                      <Badge 
-                        variant={item.index_status === "index" ? "default" : "destructive"}
-                        className={item.index_status === "index" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : ""}
-                      >
-                        {item.index_status === "index" ? "インデックス" : "ノーインデックス"}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {item.internal_links?.length || 0} リンク
-                      </span>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+              <ScrapingResultSimpleList
+                results={simpleResults}
+                onSelectItem={handleSelectItem}
+                isLoading={isLoading}
+              />
             </TabsContent>
             
             <TabsContent value="table" className="mt-0">
@@ -508,7 +291,7 @@ export default function ScrapingResults() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {results.map(item => (
+                      {simpleResults.map(item => (
                         <TableRow key={item.id} className="cursor-pointer hover:bg-muted/50">
                           <TableCell className="font-medium max-w-[200px] truncate">
                             {item.title || "タイトルなし"}
@@ -532,7 +315,7 @@ export default function ScrapingResults() {
                               {item.index_status === "index" ? "インデックス" : "ノーインデックス"}
                             </Badge>
                           </TableCell>
-                          <TableCell>{item.internal_links?.length || 0}</TableCell>
+                          <TableCell>{item.internal_links_count}</TableCell>
                           <TableCell>
                             <Button 
                               variant="ghost" 
@@ -555,24 +338,10 @@ export default function ScrapingResults() {
 
         {/* モーダル */}
         {selectedItem && (
-          <ScrapingResultModal
+          <ScrapingResultSimpleModal
             isOpen={isDialogOpen}
             setOpen={setIsDialogOpen}
             item={selectedItem}
-            isEditing={isEditing}
-            startEditing={startEditing}
-            cancelEditing={cancelEditing}
-            deleteItem={handleDeleteItem}
-            updateEditingItem={updateEditingItem}
-            updateInternalLink={updateInternalLink}
-            addInternalLink={addInternalLink}
-            removeInternalLink={removeInternalLink}
-            handleHeadingUpdate={handleHeadingUpdate}
-            onUpdateBasicInfo={handleUpdateBasicInfo}
-            onUpdateInternalLinks={handleUpdateInternalLinks}
-            onDeleteInternalLink={handleDeleteInternalLink}
-            onUpdateHeadings={handleUpdateHeadings}
-            readOnly={true} // 閲覧専用モードを設定
           />
         )}
       </div>
