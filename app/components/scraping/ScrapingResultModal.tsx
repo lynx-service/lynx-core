@@ -29,6 +29,7 @@ interface Props {
   onUpdateInternalLinks?: (item: EditableScrapingResultItem) => Promise<void>;
   onDeleteInternalLink?: (linkId: number) => Promise<void>;
   onUpdateHeadings?: (item: EditableScrapingResultItem) => Promise<void>;
+  readOnly?: boolean; // 閲覧専用モードを追加
 }
 
 export function ScrapingResultModal({
@@ -48,6 +49,7 @@ export function ScrapingResultModal({
   onUpdateInternalLinks,
   onDeleteInternalLink,
   onUpdateHeadings,
+  readOnly = false, // デフォルトは編集可能
 }: Props) {
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
@@ -58,7 +60,7 @@ export function ScrapingResultModal({
               {isEditing ? "データの編集" : (item.title || "タイトルなし")}
             </DialogTitle>
 
-            {!isEditing && (
+            {!isEditing && !readOnly && (
               <Button
                 onClick={() => deleteItem(item.id)}
                 variant="outline"
@@ -86,6 +88,7 @@ export function ScrapingResultModal({
         </DialogHeader>
 
         <ScrapingResultModalContent
+          key={item.id}
           item={item}
           isEditing={isEditing}
           startEditing={startEditing}
@@ -99,6 +102,7 @@ export function ScrapingResultModal({
           onUpdateInternalLinks={onUpdateInternalLinks}
           onDeleteInternalLink={onDeleteInternalLink}
           onUpdateHeadings={onUpdateHeadings}
+          readOnly={readOnly}
         />
 
         <DialogFooter>

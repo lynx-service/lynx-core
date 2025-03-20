@@ -23,6 +23,7 @@ interface Props {
   onUpdateInternalLinks?: (item: EditableScrapingResultItem) => Promise<void>;
   onDeleteInternalLink?: (linkId: number) => Promise<void>;
   onUpdateHeadings?: (item: EditableScrapingResultItem) => Promise<void>;
+  readOnly?: boolean; // 閲覧専用モードを追加
 }
 
 export function ScrapingResultModalContent({
@@ -39,6 +40,7 @@ export function ScrapingResultModalContent({
   onUpdateInternalLinks,
   onDeleteInternalLink,
   onUpdateHeadings,
+  readOnly = false, // デフォルトは編集可能
 }: Props) {
   const [isUpdatingBasicInfo, setIsUpdatingBasicInfo] = useState(false);
   const [isUpdatingInternalLinks, setIsUpdatingInternalLinks] = useState(false);
@@ -108,7 +110,7 @@ export function ScrapingResultModalContent({
   return (
     <div className="space-y-6">
       <div className="flex justify-end space-x-2">
-        {!isEditing && (
+        {!isEditing && !readOnly && (
           <Button
             onClick={startEditing}
             variant="outline"
