@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/share/prisma/prisma.service';
 import { ArticleDto, HeadingDto } from '../dto/create-scraping-result.dto';
-import { Prisma, Article } from '@prisma/client';
+import { Prisma, Article, InternalLink, OuterLink } from '@prisma/client';
 
 /**
  * スクレイピング結果の保存結果
@@ -10,7 +10,16 @@ export interface ScrapingResult {
   articlesDeleted: number;
   articlesCreated: number;
   innerLinksCreated: number;
+  outerLinksCreated: number;
   headingsCreated: number;
+}
+
+/**
+ * リレーション含めた記事情報の型定義
+ */
+export interface ArticleRelations extends Article {
+  internalLinks?: InternalLink[];
+  outerLinks?: OuterLink[];
 }
 
 @Injectable()
@@ -29,48 +38,45 @@ export class ScrapingResultDao {
         where: { projectId },
         select: { id: true },
       });
-      
-      const articleIds = articlesToDelete.map(article => article.id);
-      
+
+      const articleIds = articlesToDelete.map((article) => article.id);
+
       if (articleIds.length === 0) {
         return 0;
       }
-      
+
       // 2. 内部リンクを削除
-      await prisma.innerLink.deleteMany({
+      await prisma.internalLink.deleteMany({
         where: {
-          OR: [
-            { criteriaArticleId: { in: articleIds } },
-            { linkedArticleId: { in: articleIds } },
-          ],
+          criteriaArticleId: { in: articleIds },
         },
       });
-      
-      // 3. 見出しを削除
-      await prisma.heading.deleteMany({
-        where: {
-          articleId: { in: articleIds },
-        },
-      });
-      
+
       // 4. 記事を削除
       const deleteResult = await prisma.article.deleteMany({
         where: {
           id: { in: articleIds },
         },
       });
-      
+
       return deleteResult.count;
     });
   }
-  
+
   /**
    * 記事を作成
    * @param projectId プロジェクトID
    * @param article 記事DTO
    * @returns 作成された記事
    */
-  async createArticle(projectId: number, article: ArticleDto): Promise<Article> {
+  async createArticle(
+    projectId: number,
+    article: ArticleDto,
+  ): Promise<Article> {
+    // JSONとしてシリアライズ
+    const headingsJson = JSON.parse(JSON.stringify(article.headings));
+    const jsonLdJson = JSON.parse(JSON.stringify(article.jsonLd));
+
     return this.prismaService.article.create({
       data: {
         projectId,
@@ -78,49 +84,44 @@ export class ScrapingResultDao {
         metaTitle: article.metaTitle,
         metaDescription: article.metaDescription,
         isIndexable: article.isIndexable,
+        headings: headingsJson,
+        jsonLd: jsonLdJson,
       },
     });
   }
-  
+
   /**
    * 内部リンクを処理
    * @param criteriaArticleId 基準記事ID
-   * @param projectId プロジェクトID
    * @param internalLinks 内部リンク配列
    * @returns 作成された内部リンクの数
    */
   async processInternalLinks(
     criteriaArticleId: number,
-    projectId: number,
     internalLinks: ArticleDto['internalLinks'],
   ): Promise<number> {
     let created = 0;
-    
+
     for (const link of internalLinks) {
-      // リンク先の記事を検索または作成
-      const linkedArticle = await this.findOrCreateLinkedArticle(
-        projectId,
-        link.linkUrl,
-      );
-      
+      // JSONとしてシリアライズ
+      const statusJson = JSON.parse(JSON.stringify(link.status));
+
       // 内部リンクを作成
-      await this.prismaService.innerLink.create({
+      await this.prismaService.internalLink.create({
         data: {
           criteriaArticleId,
-          linkedArticleId: linkedArticle.id,
           linkUrl: link.linkUrl,
           anchorText: link.anchorText || '',
-          rel: link.rel || '',
-          type: link.type,
-          isActive: link.isActive,
+          isFollow: link.isFollow,
+          status: statusJson,
         },
       });
       created += 1;
     }
-    
+
     return created;
   }
-  
+
   /**
    * リンク先の記事を検索または作成
    * @param projectId プロジェクトID
@@ -137,117 +138,191 @@ export class ScrapingResultDao {
         articleUrl: linkUrl,
       },
     });
-    
+
     if (linkedArticle) {
       return linkedArticle;
     }
-    
+
     // リンク先の記事が存在しない場合は作成
     return this.prismaService.article.create({
       data: {
         projectId,
         articleUrl: linkUrl,
-        metaTitle: '', // 後で更新される可能性あり
+        metaTitle: '',
         metaDescription: '',
         isIndexable: true,
       },
     });
   }
-  
+
   /**
-   * 見出しの階層構造を処理して保存
-   * @param articleId 記事ID
-   * @param headings 見出し配列
-   * @param parentId 親見出しID
-   * @param order 表示順序
-   * @returns 作成された見出しの数
+   * 外部リンクを処理
+   * @param criteriaArticleId 基準記事ID
+   * @param outerLinks 外部リンク配列
+   * @returns 作成された外部リンクの数
    */
-  async processHeadings(
-    articleId: number,
-    headings: HeadingDto[],
-    parentId: number = null,
-    order: number = 0,
+  async processOuterLinks(
+    criteriaArticleId: number,
+    outerLinks: ArticleDto['outerLinks'],
   ): Promise<number> {
     let created = 0;
-    let currentOrder = order;
-    
-    for (const heading of headings) {
-      // tagからlevelを抽出（例：h1 -> 1, h2 -> 2）
-      const level = parseInt(heading.tag.substring(1));
-      
-      // 見出しを作成
-      const createdHeading = await this.prismaService.heading.create({
+
+    for (const link of outerLinks) {
+      // JSONとしてシリアライズ
+      const statusJson = JSON.parse(JSON.stringify(link.status));
+
+      // 外部リンクを作成
+      await this.prismaService.outerLink.create({
         data: {
-          articleId,
-          tag: heading.tag,
-          text: heading.text,
-          level,
-          parentId,
-          order: currentOrder++,
+          criteriaArticleId,
+          linkUrl: link.linkUrl,
+          anchorText: link.anchorText || '',
+          isFollow: link.isFollow,
+          status: statusJson,
         },
       });
       created += 1;
-      
-      // 子見出しを再帰的に処理
-      if (heading.children && heading.children.length > 0) {
-        created += await this.processHeadings(
-          articleId,
-          heading.children,
-          createdHeading.id,
-          currentOrder * 100, // 子要素の順序を親要素より大きくする
-        );
-      }
     }
-    
+
     return created;
   }
-  
+
   /**
    * プロジェクトIDに紐づく記事を取得
    * @param projectId プロジェクトID
    * @returns 記事一覧
    */
-  async findByProjectId(projectId: number): Promise<Article[]> {
+  async findByProjectId(projectId: number): Promise<ArticleRelations[]> {
     return this.prismaService.article.findMany({
       where: { projectId },
       include: {
-        headings: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-        innerLinks: {
-          include: {
-            linkedArticle: true,
-          },
-        },
+        internalLinks: true,
+        outerLinks: true,
       },
       orderBy: {
         id: 'asc',
       },
     });
   }
-  
+
   /**
    * 記事IDに紐づく記事を取得
    * @param id 記事ID
    * @returns 記事
    */
-  async findById(id: number): Promise<Article> {
-    return this.prismaService.article.findUnique({
+  async findById(id: number): Promise<ArticleRelations | null> {
+    const article = this.prismaService.article.findUnique({
       where: { id },
       include: {
-        headings: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
-        innerLinks: {
-          include: {
-            linkedArticle: true,
-          },
-        },
+        internalLinks: true,
+        outerLinks: true,
       },
     });
+
+    if (!article) {
+      return null;
+    }
+
+    return article;
   }
+
+  // /**
+  //  * プロジェクトIDに紐づく記事を取得し、フロントエンド用のフォーマットに変換
+  //  * @param projectId プロジェクトID
+  //  * @returns フロントエンド用の記事データ
+  //  */
+  // async findAll(projectId: number): Promise<Article[]> {
+  //   const articles = await this.prismaService.article.findMany({
+  //     where: {
+  //       projectId,
+  //     },
+  //     include: {
+  //       internalLinks: true,
+  //       outerLinks: true,
+  //     },
+  //   });
+
+  //   if (!articles) {
+  //     return [];
+  //   }
+
+  //   articles.map((article) => {
+  //     // フロントエンド用のフォーマットに変換
+  //     return {
+  //       id: article.id,
+  //       articleUrl: article.articleUrl,
+  //       metaTitle: article.metaTitle,
+  //       metaDescription: article.metaDescription,
+  //       isIndexable: article.isIndexable,
+
+  //       // 内部リンクを変換
+  //       internalLinks: article.internalLinks.map((link) => ({
+  //         linkUrl: link.linkUrl,
+  //         anchorText: link.anchorText,
+  //         isFollow: link.isFollow,
+  //         status: link.status,
+  //       })),
+
+  //       // 外部リンクを変換
+  //       outerLinks: article.outerLinks.map((link) => ({
+  //         linkUrl: link.linkUrl,
+  //         anchorText: link.anchorText,
+  //         isFollow: link.isFollow,
+  //         status: link.status,
+  //       })),
+
+  //       // 見出しと JSON-LD はJSONBカラムから直接取得
+  //       headings: article.headings || [],
+  //       jsonLd: article.jsonLd || [],
+  //     };
+  //   });
+  // }
+
+  // /**
+  //  * 記事IDに紐づく記事を取得し、フロントエンド用のフォーマットに変換
+  //  * @param id 記事ID
+  //  * @returns フロントエンド用の記事データ
+  //  */
+  // async findByIdForFrontend(id: number): Promise<Article | null> {
+  //   const article = await this.prismaService.article.findUnique({
+  //     where: { id },
+  //     include: {
+  //       internalLinks: true,
+  //       outerLinks: true,
+  //     },
+  //   });
+
+  //   if (!article) {
+  //     return null;
+  //   }
+
+  //   // フロントエンド用のフォーマットに変換
+  //   return {
+  //     id: article.id,
+  //     articleUrl: article.articleUrl,
+  //     metaTitle: article.metaTitle,
+  //     metaDescription: article.metaDescription,
+  //     isIndexable: article.isIndexable,
+
+  //     // 内部リンクを変換
+  //     internalLinks: article.internalLinks.map((link) => ({
+  //       linkUrl: link.linkUrl,
+  //       anchorText: link.anchorText,
+  //       isFollow: link.isFollow,
+  //       status: link.status,
+  //     })),
+
+  //     // 外部リンクを変換
+  //     outerLinks: article.outerLinks.map((link) => ({
+  //       linkUrl: link.linkUrl,
+  //       anchorText: link.anchorText,
+  //       isFollow: link.isFollow,
+  //       status: link.status,
+  //     })),
+
+  //     // 見出しと JSON-LD はJSONBカラムから直接取得
+  //     headings: article.headings || [],
+  //     jsonLd: article.jsonLd || [],
+  //   };
+  // }
 }

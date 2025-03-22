@@ -2,6 +2,18 @@ import { IsArray, IsBoolean, IsNumber, IsOptional, IsString, ValidateNested } fr
 import { Type } from 'class-transformer';
 
 /**
+ * リンクステータス情報のDTO
+ */
+export class LinkStatusDto {
+  @IsNumber()
+  code: number;
+
+  @IsString()
+  @IsOptional()
+  redirectUrl?: string;
+}
+
+/**
  * 内部リンク情報のDTO
  */
 export class InternalLinkDto {
@@ -12,15 +24,31 @@ export class InternalLinkDto {
   @IsOptional()
   anchorText?: string;
 
+  @IsBoolean()
+  isFollow: boolean;
+
+  @ValidateNested()
+  @Type(() => LinkStatusDto)
+  status: LinkStatusDto;
+}
+
+/**
+ * 外部リンク情報のDTO
+ */
+export class OuterLinkDto {
+  @IsString()
+  linkUrl: string;
+
   @IsString()
   @IsOptional()
-  rel?: string;
-
-  @IsString()
-  type: string;
+  anchorText?: string;
 
   @IsBoolean()
-  isActive: boolean;
+  isFollow: boolean;
+
+  @ValidateNested()
+  @Type(() => LinkStatusDto)
+  status: LinkStatusDto;
 }
 
 /**
@@ -63,8 +91,17 @@ export class ArticleDto {
 
   @IsArray()
   @ValidateNested({ each: true })
+  @Type(() => OuterLinkDto)
+  outerLinks: OuterLinkDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
   @Type(() => HeadingDto)
   headings: HeadingDto[];
+
+  @IsArray()
+  @IsOptional()
+  jsonLd?: any[];
 }
 
 /**

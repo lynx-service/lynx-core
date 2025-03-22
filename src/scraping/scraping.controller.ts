@@ -2,13 +2,15 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { CreateScrapingResultDto } from './dto/create-scraping-result.dto';
 import { BulkCreateScrapingResultUsecase } from './usecase/bulk-create-scraping-result.usecase';
-import { ScrapingResultDao } from './dao/scraping-result.dao';
+import { GetScrapingResultUsecase } from './usecase/get-scraping-result.usecase';
+import { ListScrapingResultsUsecase } from './usecase/list-scraping-results.usecase';
 
 @Controller('scraping')
 export class ScrapingController {
   constructor(
     private readonly bulkCreateScrapingResultUsecase: BulkCreateScrapingResultUsecase,
-    private readonly scrapingResultDao: ScrapingResultDao,
+    private readonly getScrapingResultUsecase: GetScrapingResultUsecase,
+    private readonly listScrapingResultsUsecase: ListScrapingResultsUsecase,
   ) {}
 
   /**
@@ -30,7 +32,7 @@ export class ScrapingController {
   @Get('project/:projectId')
   @UseGuards(JwtAuthGuard)
   async findByProjectId(@Param('projectId') projectId: string) {
-    return this.scrapingResultDao.findByProjectId(Number(projectId));
+    return this.listScrapingResultsUsecase.execute(Number(projectId));
   }
 
   /**
@@ -41,6 +43,6 @@ export class ScrapingController {
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async findById(@Param('id') id: string) {
-    return this.scrapingResultDao.findById(Number(id));
+    return this.getScrapingResultUsecase.execute(Number(id));
   }
 }
