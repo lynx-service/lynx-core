@@ -1,5 +1,5 @@
 import type { Route } from "./+types/home";
-import { useLoaderData, useActionData, Form as RouterForm, useSubmit, useNavigate } from "react-router";
+import { useLoaderData, useActionData, Form as RouterForm, useSubmit, useNavigate, useBlocker } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
 import { Button } from "~/components/ui/button";
@@ -32,23 +32,6 @@ export function meta({ }: Route.MetaArgs) {
 export const loader = async ({ request }: Route.LoaderArgs) => {
   // ログインチェック
   await requireAuth(request);
-
-  const session = await getSession(request.headers.get("Cookie"));
-  const token = session.get("token");
-  const user = session.get("user");
-
-  const res = await fetch("http://localhost:3000/hello", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    }
-  });
-
-  if (!res.ok) {
-    throw new Response("Failed to fetch data", { status: res.status });
-  }
-
-  const data: string = await res.text();
-  return { data, user };
 };
 
 export const action = async ({ request }: Route.ActionArgs) => {
@@ -112,13 +95,19 @@ export const action = async ({ request }: Route.ActionArgs) => {
 };
 
 export default function Scrapying() {
-  const { data, user } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setScrapingResults] = useAtom(articlesAtom);
 
+  // ナビゲーションブロッカーを設定
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      isSubmitting && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // フォームを設定
   const form = useForm<ScrapyRequest>({
     resolver: zodResolver(scrapyRequestSchema),
     defaultValues: {
@@ -153,9 +142,10 @@ export default function Scrapying() {
         setScrapingResults(scrapedData);
 
         // 結果表示画面に遷移
-        if (scrapedData.length > 0) {
-          navigate("/scraping/result");
-        }
+        // NOTE：ナビゲーションブロッカーを設定していると動作しないので一旦コメントアウト
+        // if (scrapedData.length > 0) {
+        //   navigate("/scraping/result");
+        // }
       }
     }
   }, [actionData, navigate, setScrapingResults]);
@@ -168,6 +158,37 @@ export default function Scrapying() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+      {/* ナビゲーションブロッカー */}
+      {blocker.state === "blocked" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
+              処理の中断確認
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-5">
+              スクレイピング処理が進行中です。このページを離れると処理が中断されます。本当に移動しますか？
+            </p>
+            <div className="flex justify-end space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => blocker.reset()}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setIsSubmitting(false);
+                  blocker.proceed();
+                }}
+              >
+                移動する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
@@ -182,14 +203,14 @@ export default function Scrapying() {
           {hasResults && (
             <div className="mt-5">
               <Button
-                onClick={() => navigate("/content")}
+                onClick={() => navigate("/scraping/result")}
                 className="bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border border-emerald-500 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-700 transition-all duration-200"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                   <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
                 </svg>
-                コンテンツ管理へ
+                スクレイピング結果を表示する
               </Button>
             </div>
           )}
@@ -197,6 +218,20 @@ export default function Scrapying() {
 
         <Card className="shadow-xl transition-all duration-300 hover:shadow-2xl">
           <CardContent className="p-6 sm:p-8">
+            {isSubmitting && (
+              <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
+                <div className="flex items-center">
+                  <svg className="animate-spin h-5 w-5 text-amber-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-amber-700 dark:text-amber-300 font-medium">
+                    スクレイピング処理中です。このページを離れると処理が中断されます。
+                  </p>
+                </div>
+              </div>
+            )}
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="space-y-6">
@@ -206,17 +241,18 @@ export default function Scrapying() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-base font-medium text-gray-700 dark:text-gray-200">
-                          スクレイピングURL
+                          スクレイピングURL <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="https://example.com"
                             className="h-12 px-4 rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all duration-200"
+                            // required
                             {...field}
                           />
                         </FormControl>
                         <FormDescription className="text-sm text-gray-500 dark:text-gray-400">
-                          スクレイピングを開始するURLを入力してください
+                          スクレイピングを開始するURLを入力してください（必須）
                         </FormDescription>
                         <FormMessage className="text-red-500" />
                       </FormItem>
@@ -229,17 +265,18 @@ export default function Scrapying() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-base font-medium text-gray-700 dark:text-gray-200">
-                          対象クラス名
+                          対象クラス名 <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="content-class"
                             className="h-12 px-4 rounded-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 transition-all duration-200"
+                            // required
                             {...field}
                           />
                         </FormControl>
                         <FormDescription className="text-sm text-gray-500 dark:text-gray-400">
-                          スクレイピング対象のHTML要素のクラス名を入力してください
+                          スクレイピング対象のHTML要素のクラス名を入力してください（必須）
                         </FormDescription>
                         <FormMessage className="text-red-500" />
                       </FormItem>
@@ -269,6 +306,7 @@ export default function Scrapying() {
           </CardContent>
         </Card>
 
+        {/* エラーメッセージカード */}
         {actionData?.error && (
           <Card className="mt-6 border-red-200 dark:border-red-800 animate-fade-in">
             <CardContent className="p-4 flex">
