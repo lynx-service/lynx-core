@@ -143,36 +143,18 @@ model Article {
   metaTitle       String?  @map("meta_title")
   metaDescription String?  @map("meta_description")
   isIndexable     Boolean  @default(true) @map("is_indexable")
+  headings        Json?    @map("headings")
+  jsonLd          Json?    @map("json_ld")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  project    Project          @relation(fields: [projectId], references: [id])
-  keywords   KeywordArticle[]
-  innerLinks InnerLink[]      @relation("ArticleCriteria")
-  linkedFrom InnerLink[]      @relation("ArticleLinked")
-  headings   Heading[]        // 記事の見出し
+  project       Project          @relation(fields: [projectId], references: [id])
+  keywords      KeywordArticle[]
+  internalLinks InternalLink[]   @relation("ArticleCriteria")
+  outerLinks    OuterLink[]      @relation("ArticleCriteria")
 
   @@unique([projectId, articleUrl])
   @@map("article")
-}
-
-// 見出し
-model Heading {
-  id        Int      @id @default(autoincrement()) @map("id")
-  articleId Int      @map("article_id")            // 記事ID
-  tag       String   @map("tag")                   // h1, h2, h3, h4
-  text      String   @map("text")                  // 見出しテキスト
-  level     Int      @map("level")                 // 1, 2, 3, 4（tagから自動計算）
-  parentId  Int?     @map("parent_id")             // 親見出しID
-  order     Int      @map("order")                 // 表示順序
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  article   Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  parent    Heading?  @relation("HeadingHierarchy", fields: [parentId], references: [id])
-  children  Heading[] @relation("HeadingHierarchy")
-
-  @@map("heading")
 }
 
 // キーワードと記事の中間テーブル
@@ -190,21 +172,33 @@ model KeywordArticle {
 }
 
 // 内部リンク
-model InnerLink {
+model InternalLink {
   id                Int      @id @default(autoincrement()) @map("id")
-  type              String   @map("type")                  // OUTBOUND などのリンクタイプ
-  criteriaArticleId Int      @map("criteria_article_id")   // リンク元記事ID
-  linkedArticleId   Int      @map("linked_article_id")     // リンク先記事ID
-  anchorText        String?  @map("anchor_text")           // アンカーテキスト
-  linkUrl           String   @map("link_url")              // リンクURL
-  rel               String?  @map("rel")                   // follow/nofollow
-  isActive          Boolean  @default(true) @map("is_active") // アクティブ状態
+  criteriaArticleId Int      @map("criteria_article_id") // リンク元記事ID
+  anchorText        String?  @map("anchor_text") // アンカーテキスト
+  linkUrl           String   @map("link_url") // リンクURL
+  isFollow          Boolean  @default(true) @map("is_follow") // follow/nofollow
+  status            Json?    @map("status") // リンクステータス
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   criteriaArticle Article @relation("ArticleCriteria", fields: [criteriaArticleId], references: [id])
-  linkedArticle   Article @relation("ArticleLinked", fields: [linkedArticleId], references: [id])
 
-  @@unique([criteriaArticleId, linkedArticleId])
   @@map("inner_link")
+}
+
+// 外部リンク
+model OuterLink {
+  id                Int      @id @default(autoincrement()) @map("id")
+  criteriaArticleId Int      @map("criteria_article_id") // リンク元記事ID
+  anchorText        String?  @map("anchor_text") // アンカーテキスト
+  linkUrl           String   @map("link_url") // リンクURL
+  isFollow          Boolean  @default(true) @map("is_follow") // follow/nofollow
+  status            Json?    @map("status") // リンクステータス
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  criteriaArticle Article @relation("ArticleCriteria", fields: [criteriaArticleId], references: [id])
+
+  @@map("outer_link")
 }
