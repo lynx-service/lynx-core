@@ -21,6 +21,22 @@ export interface InternalLinkItem {
   linkUrl: string;  
   rel?: string | null;
   isActive?: boolean;
+  isFollow?: boolean; // follow/nofollow の状態
+  status?: {
+    code: number;
+    redirectUrl: string;
+  };
+}
+
+// 外部リンクの型定義
+export interface OuterLinkItem {
+  id?: number;
+  type?: string;
+  anchorText?: string | null;
+  linkUrl: string;
+  rel?: string | null;
+  isActive?: boolean;
+  isFollow?: boolean; // follow/nofollow の状態
   status?: {
     code: number;
     redirectUrl: string;
@@ -56,6 +72,7 @@ export interface ArticleItem {
   metaDescription: string;
   isIndexable?: boolean;
   internalLinks?: InternalLinkItem[];
+  outerLinks?: OuterLinkItem[]; // 外部リンク
   linkedFrom?: InternalLinkItem[];
   headings?: HeadingItem[];
   keywords?: KeywordArticleItem[];

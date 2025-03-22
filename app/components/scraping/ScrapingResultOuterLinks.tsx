@@ -1,17 +1,17 @@
-import type { ArticleItem, InternalLinkItem } from "~/types/article";
+import type { ArticleItem, OuterLinkItem } from "~/types/article";
 
 interface Props {
   item: ArticleItem;
 }
 
-export function ScrapingResultInternalLinks({ item }: Props) {
+export function ScrapingResultOuterLinks({ item }: Props) {
   return (
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
       <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">内部リンク</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">外部リンク</h3>
       </div>
       <div className="p-4 bg-white dark:bg-gray-800">
-        {item.internalLinks && item.internalLinks.length > 0 ? (
+        {item.outerLinks && item.outerLinks.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-800">
@@ -24,7 +24,7 @@ export function ScrapingResultInternalLinks({ item }: Props) {
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {item.internalLinks.map((link: InternalLinkItem, index) => (
+                {item.outerLinks.map((link: OuterLinkItem, index) => (
                   <tr key={index}>
                     <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 dark:text-gray-200">
                       {link.anchorText || "（アンカーテキストなし）"}
@@ -82,7 +82,7 @@ export function ScrapingResultInternalLinks({ item }: Props) {
           </div>
         ) : (
           <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-            内部リンクがありません
+            外部リンクがありません
           </div>
         )}
       </div>
