@@ -4,14 +4,15 @@ import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
 import { Button } from "~/components/ui/button";
 import { useAtom } from "jotai";
-import { scrapingResultsAtom, type EditableScrapingResultItem, type HeadingItem } from "~/atoms/scrapingResults";
-import { useState, useCallback } from "react";
+import { articlesAtom } from "~/atoms/article";
+import type { ArticleItem } from "~/types/article";
+import { useState } from "react";
 import { ScrapingResultModal } from "~/components/scraping/ScrapingResultModal";
 
 export function meta({ }: Route.MetaArgs) {
   return [
     { title: "スクレイピング結果" },
-    { name: "description", content: "スクレイピング結果の編集" },
+    { name: "description", content: "スクレイピング結果の表示" },
   ];
 }
 
@@ -27,109 +28,10 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
 export default function ScrapingResults() {
   const { user } = useLoaderData();
-  const [results, setResults] = useAtom(scrapingResultsAtom);
+  const [results] = useAtom(articlesAtom);
   const navigate = useNavigate();
-  const [selectedItem, setSelectedItem] = useState<EditableScrapingResultItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<ArticleItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingItem, setEditingItem] = useState<EditableScrapingResultItem | null>(null);
-
-  // 項目の削除
-  const deleteItem = (id: string) => {
-    setResults(prev => prev.filter(item => item.id !== id));
-    setIsDialogOpen(false);
-  };
-
-  // 編集モードの開始
-  const startEditing = () => {
-    if (selectedItem) {
-      setEditingItem({ ...selectedItem });
-      setIsEditing(true);
-    }
-  };
-
-  // 編集モードのキャンセル
-  const cancelEditing = () => {
-    setIsEditing(false);
-    setEditingItem(null);
-  };
-
-  // 編集内容の保存
-  const saveEditing = () => {
-    if (editingItem) {
-      setResults(prev =>
-        prev.map(item =>
-          item.id === editingItem.id ? { ...editingItem } : item
-        )
-      );
-      setSelectedItem(editingItem);
-      setIsEditing(false);
-      setEditingItem(null);
-    }
-  };
-
-  // 編集中のアイテムの更新
-  const updateEditingItem = (field: keyof EditableScrapingResultItem, value: any) => {
-    if (editingItem) {
-      setEditingItem(prev => prev ? { ...prev, [field]: value } : null);
-    }
-  };
-
-  // 内部リンクの更新
-  const updateInternalLink = (index: number, value: string) => {
-    if (editingItem && editingItem.internal_links) {
-      const newLinks = [...editingItem.internal_links];
-      newLinks[index] = value;
-      setEditingItem(prev => prev ? { ...prev, internal_links: newLinks } : null);
-    }
-  };
-
-  // 内部リンクの追加
-  const addInternalLink = () => {
-    if (editingItem) {
-      const newLinks = editingItem.internal_links ? [...editingItem.internal_links, ""] : [""];
-      setEditingItem(prev => prev ? { ...prev, internal_links: newLinks } : null);
-    }
-  };
-
-  // 内部リンクの削除
-  const removeInternalLink = (index: number) => {
-    if (editingItem && editingItem.internal_links) {
-      const newLinks = [...editingItem.internal_links];
-      newLinks.splice(index, 1);
-      setEditingItem(prev => prev ? { ...prev, internal_links: newLinks } : null);
-    }
-  };
-
-  // 見出しの更新（再帰的）
-  const updateHeading = useCallback((headings: HeadingItem[], path: number[], field: keyof HeadingItem, value: string): HeadingItem[] => {
-    if (path.length === 0) return headings;
-
-    const index = path[0];
-    const newHeadings = [...headings];
-
-    if (path.length === 1) {
-      newHeadings[index] = { ...newHeadings[index], [field]: value };
-    } else {
-      const newPath = path.slice(1);
-      if (newHeadings[index].children) {
-        newHeadings[index] = {
-          ...newHeadings[index],
-          children: updateHeading(newHeadings[index].children || [], newPath, field, value)
-        };
-      }
-    }
-
-    return newHeadings;
-  }, []);
-
-  // 見出しの更新ハンドラー
-  const handleHeadingUpdate = (path: number[], field: keyof HeadingItem, value: string) => {
-    if (editingItem && editingItem.headings) {
-      const newHeadings = updateHeading(editingItem.headings, path, field, value);
-      setEditingItem(prev => prev ? { ...prev, headings: newHeadings } : null);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
@@ -142,7 +44,7 @@ export default function ScrapingResults() {
               </span>
             </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-300">
-              取得した{results.length}件のデータを編集・管理できます
+              取得した{results.length}件のデータを表示します
             </p>
           </div>
 
@@ -164,44 +66,42 @@ export default function ScrapingResults() {
               className="h-full flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 cursor-pointer"
               onClick={() => {
                 setSelectedItem(item);
-                setIsEditing(false);
-                setEditingItem(null);
                 setIsDialogOpen(true);
               }}
             >
               {/* コンテンツ部分 */}
               <div className="flex-grow p-6 dark:bg-gray-800">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                  {item.title || "タイトルなし"}
+                  {item.metaTitle || "タイトルなし"}
                 </h2>
 
                 <a
-                  href={item.url}
+                  href={item.articleUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-blue-600 dark:text-blue-400 hover:underline mb-3 block truncate"
                 >
-                  {item.url}
+                  {item.articleUrl}
                 </a>
 
                 <div className="mt-3 text-gray-600 dark:text-gray-300 text-sm line-clamp-4 h-20 overflow-hidden">
-                  {item.content || "コンテンツなし"}
+                  {item.metaDescription || "コンテンツなし"}
                 </div>
               </div>
 
               {/* フッター部分（常に最下部） */}
               <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-between mt-auto">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.index_status === "index"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.isIndexable
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                     }`}
                 >
-                  {item.index_status === "index" ? "インデックス" : "ノーインデックス"}
+                  {item.isIndexable ? "インデックス" : "ノーインデックス"}
                 </span>
 
                 <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {item.internal_links?.length || 0} リンク
+                  {item.internalLinks?.length || 0} リンク
                 </span>
               </div>
             </div>
@@ -225,25 +125,12 @@ export default function ScrapingResults() {
         )}
       </div>
 
-      {/* 詳細表示・編集用モーダル */}
+      {/* 詳細表示モーダル */}
       {selectedItem && (
         <ScrapingResultModal
           item={selectedItem}
           isOpen={isDialogOpen}
           setOpen={setIsDialogOpen}
-          isEditing={isEditing}
-          startEditing={() => setIsEditing(true)}
-          cancelEditing={() => setIsEditing(false)}
-          saveEditing={() => {
-            saveEditing();
-            setIsDialogOpen(false);
-          }}
-          updateEditingItem={updateEditingItem}
-          updateInternalLink={updateInternalLink}
-          addInternalLink={addInternalLink}
-          removeInternalLink={removeInternalLink}
-          handleHeadingUpdate={handleHeadingUpdate}
-          deleteItem={deleteItem}
         />
       )}
     </div>

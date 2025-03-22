@@ -1,8 +1,8 @@
-import type { EditableScrapingResultItem, HeadingItem } from "~/atoms/scrapingResults";
+import type { ArticleItem, HeadingItem, InternalLinkItem } from "~/types/article";
 import { HeadingList } from "./HeadingList";
 
 interface Props {
-  item: EditableScrapingResultItem;
+  item: ArticleItem;
 }
 
 export function ScrapingResultDisplay({ item }: Props) {
@@ -21,12 +21,12 @@ export function ScrapingResultDisplay({ item }: Props) {
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">URL</dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-gray-200 break-all">
                 <a
-                  href={item.url}
+                  href={item.articleUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  {item.url}
+                  {item.articleUrl}
                 </a>
               </dd>
             </div>
@@ -35,7 +35,7 @@ export function ScrapingResultDisplay({ item }: Props) {
             <div className="sm:col-span-2">
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">タイトル</dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-gray-200">
-                {item.title || "タイトルなし"}
+                {item.metaTitle || "タイトルなし"}
               </dd>
             </div>
 
@@ -43,7 +43,7 @@ export function ScrapingResultDisplay({ item }: Props) {
             <div className="sm:col-span-2">
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">説明文（メタディスクリプション）</dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-gray-200 whitespace-pre-wrap">
-                {item.content || "説明文なし"}
+                {item.metaDescription || "説明文なし"}
               </dd>
             </div>
 
@@ -51,11 +51,11 @@ export function ScrapingResultDisplay({ item }: Props) {
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">インデックス状態</dt>
               <dd className="mt-1">
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.index_status === 'index'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.isIndexable
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                   }`}>
-                  {item.index_status === 'index' ? 'インデックス' : 'ノーインデックス'}
+                  {item.isIndexable ? 'インデックス' : 'ノーインデックス'}
                 </span>
               </dd>
             </div>
@@ -64,22 +64,22 @@ export function ScrapingResultDisplay({ item }: Props) {
       </div>
 
       {/* 内部リンクセクション */}
-      {item.internal_links && item.internal_links.length > 0 && (
+      {item.internalLinks && item.internalLinks.length > 0 && (
         <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
           <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">内部リンク</h3>
           </div>
           <div className="p-4 bg-white dark:bg-gray-800">
             <ul className="space-y-1 list-disc list-inside">
-              {item.internal_links.map((link, index) => (
+              {item.internalLinks.map((link: InternalLinkItem, index) => (
                 <li key={index} className="text-gray-700 dark:text-gray-300 break-all">
                   <a
-                    href={link}
+                    href={link.linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    {link}
+                    {link.linkUrl}
                   </a>
                 </li>
               ))}

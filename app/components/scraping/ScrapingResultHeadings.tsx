@@ -1,8 +1,8 @@
-import type { EditableScrapingResultItem } from "~/atoms/scrapingResults";
+import type { ArticleItem } from "~/types/article";
 import { HeadingList } from "./HeadingList";
 
 interface Props {
-  item: EditableScrapingResultItem;
+  item: ArticleItem;
 }
 
 export function ScrapingResultHeadings({ item }: Props) {

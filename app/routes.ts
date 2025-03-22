@@ -5,6 +5,7 @@ export default [
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
   route("auth/success", "routes/auth/success.tsx"),
-  route("/scrapying", "routes/scrapying.tsx"),
-  route("/scraping-results", "routes/scraping-results.tsx"),
+  route("scrapying", "routes/scrapying.tsx", [
+    route("result", "routes/scraping-results.tsx"),
+  ]),
 ] satisfies RouteConfig;
