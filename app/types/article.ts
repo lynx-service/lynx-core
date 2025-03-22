@@ -21,6 +21,10 @@ export interface InternalLinkItem {
   linkUrl: string;  
   rel?: string | null;
   isActive?: boolean;
+  status?: {
+    code: number;
+    redirectUrl: string;
+  };
 }
 
 // キーワードの型定義
@@ -55,4 +59,5 @@ export interface ArticleItem {
   linkedFrom?: InternalLinkItem[];
   headings?: HeadingItem[];
   keywords?: KeywordArticleItem[];
+  jsonLd?: any[]; // 構造化データ（JSON-LD）
 }
