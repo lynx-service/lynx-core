@@ -153,7 +153,7 @@ export default function Scrapying() {
 
         // 結果表示画面に遷移
         if (scrapedData.length > 0) {
-          navigate("/scrapying/result");
+          navigate("/scraping/result");
         }
       }
     }

@@ -5,7 +5,6 @@ export default [
   route("login", "routes/login.tsx"),
   route("logout", "routes/logout.tsx"),
   route("auth/success", "routes/auth/success.tsx"),
-  route("scrapying", "routes/scrapying.tsx", [
-    route("result", "routes/scraping-results.tsx"),
-  ]),
+  route("scraping", "routes/scrapying.tsx"), // /scrapingに変更（先頭の/を削除）
+  route("scraping/result", "routes/scraping-results.tsx"), // 別々のルートとして定義
 ] satisfies RouteConfig;

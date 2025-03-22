@@ -49,7 +49,7 @@ export default function ScrapingResults() {
           </div>
 
           <Button
-            onClick={() => navigate("/scrapying")}
+            onClick={() => navigate("/scraping")}
             className="mt-4 md:mt-0 bg-white dark:bg-gray-800 text-emerald-600 dark:text-emerald-400 border border-emerald-500 dark:border-emerald-600 hover:bg-emerald-50 dark:hover:bg-gray-700 transition-all duration-200"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -116,7 +116,7 @@ export default function ScrapingResults() {
             <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">データがありません</h3>
             <p className="mt-2 text-gray-500 dark:text-gray-400">スクレイピングを実行して結果を取得してください</p>
             <Button
-              onClick={() => navigate("/scrapying")}
+              onClick={() => navigate("/scraping")}
               className="mt-4 bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white"
             >
               スクレイピング画面へ
