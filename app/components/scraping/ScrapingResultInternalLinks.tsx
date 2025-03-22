@@ -39,15 +39,15 @@ export function ScrapingResultInternalLinks({ item }: Props) {
               <TableBody>
                 {item.internalLinks.map((link: InternalLinkItem, index) => (
                   <TableRow key={index}>
-                    <TableCell className="font-medium break-all">
+                    <TableCell className="font-medium break-all overflow-wrap-anywhere max-w-[200px]">
                       {link.anchorText || "（アンカーテキストなし）"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-w-[250px]">
                       <a
                         href={link.linkUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                        className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere"
                       >
                         {link.linkUrl}
                       </a>
@@ -90,13 +90,13 @@ export function ScrapingResultInternalLinks({ item }: Props) {
                         </Badge>
                       ) : "不明"}
                     </TableCell>
-                    <TableCell className="break-all">
+                    <TableCell className="max-w-[250px]">
                       {link.status && link.status.redirectUrl ? (
                         <a
                           href={link.status.redirectUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                          className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere"
                         >
                           {link.status.redirectUrl}
                         </a>

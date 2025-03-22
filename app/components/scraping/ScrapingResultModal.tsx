@@ -35,7 +35,7 @@ export function ScrapingResultModal({
               href={item.articleUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 dark:text-blue-400 hover:underline"
+              className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere"
             >
               {item.articleUrl}
             </a>

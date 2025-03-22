@@ -39,18 +39,18 @@ export function ScrapingResultOuterLinks({ item }: Props) {
               <TableBody>
                 {item.outerLinks.map((link: OuterLinkItem, index) => (
                   <TableRow key={index}>
-                    <TableCell className="font-medium break-all">
+                    <TableCell className="font-medium break-all overflow-wrap-anywhere max-w-[200px]">
                       {link.anchorText || "（アンカーテキストなし）"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="max-w-[250px]">
                       <a
                         href={link.linkUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline break-all flex items-center gap-1"
+                        className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere flex items-center gap-1"
                       >
-                        {link.linkUrl}
-                        <ExternalLink className="h-3 w-3" />
+                        <span className="break-all overflow-wrap-anywhere">{link.linkUrl}</span>
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
                       </a>
                     </TableCell>
                     <TableCell>
@@ -91,16 +91,16 @@ export function ScrapingResultOuterLinks({ item }: Props) {
                         </Badge>
                       ) : "不明"}
                     </TableCell>
-                    <TableCell className="break-all">
+                    <TableCell className="max-w-[250px]">
                       {link.status && link.status.redirectUrl ? (
                         <a
                           href={link.status.redirectUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                          className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere flex items-center gap-1"
                         >
-                          {link.status.redirectUrl}
-                          <ExternalLink className="h-3 w-3" />
+                          <span className="break-all overflow-wrap-anywhere">{link.status.redirectUrl}</span>
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
                         </a>
                       ) : "—"}
                     </TableCell>

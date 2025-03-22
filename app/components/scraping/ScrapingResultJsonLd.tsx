@@ -127,7 +127,7 @@ function GraphItemsDisplay({ items }: { items: any[] }) {
                   <h5 className={`text-sm font-medium ${color}`}>{type}</h5>
                 </div>
                 {item["@id"] && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]" title={item["@id"]}>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px] break-all overflow-wrap-anywhere" title={item["@id"]}>
                     ID: {item["@id"]}
                   </span>
                 )}
@@ -156,7 +156,7 @@ function SingleItemDisplay({ item }: { item: any }) {
           <h5 className={`text-sm font-medium ${color}`}>{type || "Unknown"}</h5>
         </div>
         {item["@id"] && (
-          <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]" title={item["@id"]}>
+          <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px] break-all overflow-wrap-anywhere" title={item["@id"]}>
             ID: {item["@id"]}
           </span>
         )}
@@ -206,9 +206,9 @@ function OrganizationDisplay({ data }: { data: any }) {
         <PropertyItem 
           label="url" 
           value={
-            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-              {data.url}
-              <ExternalLink size={12} className="ml-1" />
+            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+              <span className="break-all overflow-wrap-anywhere">{data.url}</span>
+              <ExternalLink size={12} className="ml-1 flex-shrink-0" />
             </a>
           } 
         />
@@ -224,9 +224,9 @@ function OrganizationDisplay({ data }: { data: any }) {
                 label="url" 
                 value={
                   <div className="flex flex-col">
-                    <a href={data.logo.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-                      {data.logo.url}
-                      <ExternalLink size={12} className="ml-1" />
+                    <a href={data.logo.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+                      <span className="break-all overflow-wrap-anywhere">{data.logo.url}</span>
+                      <ExternalLink size={12} className="ml-1 flex-shrink-0" />
                     </a>
                     <img 
                       src={data.logo.url} 
@@ -257,9 +257,9 @@ function OrganizationDisplay({ data }: { data: any }) {
               <PropertyItem 
                 label="url" 
                 value={
-                  <a href={data.founder.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-                    {data.founder.url}
-                    <ExternalLink size={12} className="ml-1" />
+                  <a href={data.founder.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+                    <span className="break-all overflow-wrap-anywhere">{data.founder.url}</span>
+                    <ExternalLink size={12} className="ml-1 flex-shrink-0" />
                   </a>
                 } 
               />
@@ -283,9 +283,9 @@ function WebSiteDisplay({ data }: { data: any }) {
         <PropertyItem 
           label="url" 
           value={
-            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-              {data.url}
-              <ExternalLink size={12} className="ml-1" />
+            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+              <span className="break-all overflow-wrap-anywhere">{data.url}</span>
+              <ExternalLink size={12} className="ml-1 flex-shrink-0" />
             </a>
           } 
         />
@@ -306,9 +306,9 @@ function WebPageDisplay({ data }: { data: any }) {
         <PropertyItem 
           label="url" 
           value={
-            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-              {data.url}
-              <ExternalLink size={12} className="ml-1" />
+            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+              <span className="break-all overflow-wrap-anywhere">{data.url}</span>
+              <ExternalLink size={12} className="ml-1 flex-shrink-0" />
             </a>
           } 
         />
@@ -369,9 +369,9 @@ function ArticleDisplay({ data }: { data: any }) {
               <PropertyItem 
                 label="url" 
                 value={
-                  <a href={data.author.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-                    {data.author.url}
-                    <ExternalLink size={12} className="ml-1" />
+                  <a href={data.author.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+                    <span className="break-all overflow-wrap-anywhere">{data.author.url}</span>
+                    <ExternalLink size={12} className="ml-1 flex-shrink-0" />
                   </a>
                 } 
               />
@@ -393,9 +393,9 @@ function ArticleDisplay({ data }: { data: any }) {
               label="url" 
               value={
                 <div className="flex flex-col">
-                  <a href={data.image.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-                    {data.image.url}
-                    <ExternalLink size={12} className="ml-1" />
+                  <a href={data.image.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+                    <span className="break-all overflow-wrap-anywhere">{data.image.url}</span>
+                    <ExternalLink size={12} className="ml-1 flex-shrink-0" />
                   </a>
                   <img 
                     src={data.image.url} 
@@ -465,9 +465,9 @@ function PersonDisplay({ data }: { data: any }) {
         <PropertyItem 
           label="url" 
           value={
-            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-              {data.url}
-              <ExternalLink size={12} className="ml-1" />
+            <a href={data.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline flex items-center break-all overflow-wrap-anywhere">
+              <span className="break-all overflow-wrap-anywhere">{data.url}</span>
+              <ExternalLink size={12} className="ml-1 flex-shrink-0" />
             </a>
           } 
         />
