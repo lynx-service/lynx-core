@@ -1,4 +1,6 @@
 import type { ArticleItem } from "~/types/article";
+import { FileText, Globe, Info } from "lucide-react";
+import { Badge } from "~/components/ui/badge";
 
 interface Props {
   item: ArticleItem;
@@ -7,7 +9,8 @@ interface Props {
 export function ScrapingResultBasicInfo({ item }: Props) {
   return (
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
+      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 flex items-center">
+        <Info className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">基本情報</h3>
       </div>
       <div className="p-4 bg-white dark:bg-gray-800">
@@ -47,12 +50,15 @@ export function ScrapingResultBasicInfo({ item }: Props) {
           <div>
             <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">インデックス状態</dt>
             <dd className="mt-1">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.isIndexable
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                }`}>
+              <Badge 
+                variant={item.isIndexable ? "default" : "destructive"}
+                className={item.isIndexable
+                  ? "bg-green-100 hover:bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40"
+                  : "bg-red-100 hover:bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40"
+                }
+              >
                 {item.isIndexable ? 'インデックス' : 'ノーインデックス'}
-              </span>
+              </Badge>
             </dd>
           </div>
         </dl>

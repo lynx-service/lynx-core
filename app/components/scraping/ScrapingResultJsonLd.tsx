@@ -1,6 +1,6 @@
 import type { ArticleItem } from "~/types/article";
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Building, Globe, FileText, BookOpen, List, User, ShoppingBag, HelpCircle, FileQuestion, Calendar, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, Building, Globe, FileText, BookOpen, List, User, ShoppingBag, HelpCircle, FileQuestion, Calendar, ExternalLink, Code } from "lucide-react";
 
 interface Props {
   item: ArticleItem;
@@ -18,7 +18,8 @@ export function ScrapingResultJsonLd({ item }: Props) {
 
   return (
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
+      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 flex items-center">
+        <Code className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">構造化データ（JSON-LD）</h3>
       </div>
       <div className="p-4 bg-white dark:bg-gray-800">

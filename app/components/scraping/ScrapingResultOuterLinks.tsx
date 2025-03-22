@@ -1,4 +1,15 @@
 import type { ArticleItem, OuterLinkItem } from "~/types/article";
+import { 
+  Table, 
+  TableBody, 
+  TableCaption, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "~/components/ui/table";
+import { Badge } from "~/components/ui/badge";
+import { ExternalLink } from "lucide-react";
 
 interface Props {
   item: ArticleItem;
@@ -7,78 +18,96 @@ interface Props {
 export function ScrapingResultOuterLinks({ item }: Props) {
   return (
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700">
+      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 flex items-center">
+        <ExternalLink className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">外部リンク</h3>
       </div>
       <div className="p-4 bg-white dark:bg-gray-800">
         {item.outerLinks && item.outerLinks.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">アンカーテキスト</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">リンクURL</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">rel</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ステータス</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">リダイレクト先</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <Table>
+              <TableCaption>外部リンク一覧 - 合計: {item.outerLinks.length}件</TableCaption>
+              <TableHeader className="bg-gray-50 dark:bg-gray-800">
+                <TableRow>
+                  <TableHead className="text-xs uppercase">アンカーテキスト</TableHead>
+                  <TableHead className="text-xs uppercase">リンクURL</TableHead>
+                  <TableHead className="text-xs uppercase">rel</TableHead>
+                  <TableHead className="text-xs uppercase">ステータス</TableHead>
+                  <TableHead className="text-xs uppercase">リダイレクト先</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {item.outerLinks.map((link: OuterLinkItem, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 dark:text-gray-200">
+                  <TableRow key={index}>
+                    <TableCell className="font-medium break-all">
                       {link.anchorText || "（アンカーテキストなし）"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 dark:text-gray-200">
+                    </TableCell>
+                    <TableCell>
                       <a
                         href={link.linkUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                        className="text-blue-600 dark:text-blue-400 hover:underline break-all flex items-center gap-1"
                       >
                         {link.linkUrl}
+                        <ExternalLink className="h-3 w-3" />
                       </a>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        link.isFollow !== undefined
-                          ? (link.isFollow
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400')
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                      }`}>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={link.isFollow !== undefined 
+                          ? (link.isFollow ? "default" : "destructive") 
+                          : "outline"
+                        }
+                        className={link.isFollow !== undefined 
+                          ? (link.isFollow 
+                              ? "bg-green-100 hover:bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40" 
+                              : "bg-red-100 hover:bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40")
+                          : "bg-gray-100 hover:bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 dark:hover:bg-gray-900/40"
+                        }
+                      >
                         {link.isFollow !== undefined ? (link.isFollow ? 'follow' : 'nofollow') : '不明'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       {link.status ? (
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          link.status.code === 200 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : link.status.code === 301 || link.status.code === 302
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                        }`}>
+                        <Badge 
+                          variant={
+                            link.status.code === 200 
+                              ? "default" 
+                              : link.status.code === 301 || link.status.code === 302
+                                ? "secondary"
+                                : "destructive"
+                          }
+                          className={
+                            link.status.code === 200 
+                              ? "bg-green-100 hover:bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40" 
+                              : link.status.code === 301 || link.status.code === 302
+                                ? "bg-yellow-100 hover:bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/40"
+                                : "bg-red-100 hover:bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40"
+                          }
+                        >
                           {link.status.code}
-                        </span>
+                        </Badge>
                       ) : "不明"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 dark:text-gray-200">
+                    </TableCell>
+                    <TableCell className="break-all">
                       {link.status && link.status.redirectUrl ? (
                         <a
                           href={link.status.redirectUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                          className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                         >
                           {link.status.redirectUrl}
+                          <ExternalLink className="h-3 w-3" />
                         </a>
                       ) : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center py-4 text-gray-500 dark:text-gray-400">
