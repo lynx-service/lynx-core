@@ -2,6 +2,7 @@ import type { ArticleItem } from "~/types/article";
 import { ScrapingResultBasicInfo } from "./ScrapingResultBasicInfo";
 import { ScrapingResultHeadings } from "./ScrapingResultHeadings";
 import { ScrapingResultInternalLinks } from "./ScrapingResultInternalLinks";
+import { ScrapingResultJsonLd } from "./ScrapingResultJsonLd";
 
 interface Props {
   item: ArticleItem;
@@ -21,6 +22,11 @@ export function ScrapingResultDisplay({ item }: Props) {
       {/* 見出し構造セクション */}
       {item.headings && item.headings.length > 0 && (
         <ScrapingResultHeadings item={item} />
+      )}
+
+      {/* 構造化データ（JSON-LD）セクション */}
+      {item.jsonLd && item.jsonLd.length > 0 && (
+        <ScrapingResultJsonLd item={item} />
       )}
 
       {/* JSON表示セクション */}
