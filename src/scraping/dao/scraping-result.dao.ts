@@ -1,184 +1,215 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/share/prisma/prisma.service';
-import { CreateScrapingResultDto, HeadingItem } from '../dto/create-scraping-result.dto';
+import { ArticleDto, HeadingDto } from '../dto/create-scraping-result.dto';
+import { Prisma, Article } from '@prisma/client';
+
+/**
+ * スクレイピング結果の保存結果
+ */
+export interface ScrapingResult {
+  articlesDeleted: number;
+  articlesCreated: number;
+  innerLinksCreated: number;
+  headingsCreated: number;
+}
 
 @Injectable()
 export class ScrapingResultDao {
   constructor(private readonly prismaService: PrismaService) {}
 
   /**
-   * スクレイピング結果を保存
-   * @param createScrapingResultDto 
-   * @returns 
+   * プロジェクトに紐づく既存の記事をすべて削除
+   * @param projectId プロジェクトID
+   * @returns 削除された記事の数
    */
-  async create(createScrapingResultDto: CreateScrapingResultDto) {
-    const { userId, scrapyingResultItems } = createScrapingResultDto;
-
-    // ユーザーからワークスペースとプロジェクトを取得
-    const user = await this.prismaService.user.findUnique({
-      where: { id: userId },
-      include: {
-        workspace: {
-          include: {
-            projects: true
-          }
-        }
-      }
-    });
-
-    if (!user || !user.workspaceId || user.workspace.projects.length === 0) {
-      throw new Error('ユーザーにワークスペースまたはプロジェクトが関連付けられていません');
-    }
-
-    // 最初のプロジェクトを使用
-    const projectId = user.workspace.projects[0].id;
-
-    // トランザクションを使用して複数の操作を一括で実行
+  async deleteArticlesByProjectId(projectId: number): Promise<number> {
     return this.prismaService.$transaction(async (prisma) => {
-      // 記事を一括作成
-      const articles = await prisma.article.createMany({
-        data: scrapyingResultItems.map(item => ({
-          projectId,
-          articleUrl: item.url,
-          metaTitle: item.title,
-          metaDescription: item.content,
-          isIndexable: item.index_status === 'index'
-        })),
-        skipDuplicates: true, // URL重複の場合はスキップ
+      // 1. 既存の記事IDを取得
+      const articlesToDelete = await prisma.article.findMany({
+        where: { projectId },
+        select: { id: true },
       });
-
-      // 作成した記事を取得
-      const createdArticles = await prisma.article.findMany({
+      
+      const articleIds = articlesToDelete.map(article => article.id);
+      
+      if (articleIds.length === 0) {
+        return 0;
+      }
+      
+      // 2. 内部リンクを削除
+      await prisma.innerLink.deleteMany({
         where: {
-          projectId,
-          articleUrl: {
-            in: scrapyingResultItems.map(item => item.url)
-          }
-        }
+          OR: [
+            { criteriaArticleId: { in: articleIds } },
+            { linkedArticleId: { in: articleIds } },
+          ],
+        },
       });
-
-      // 記事とURLのマッピングを作成
-      const articleUrlMap = new Map();
-      createdArticles.forEach(article => {
-        articleUrlMap.set(article.articleUrl, article.id);
+      
+      // 3. 見出しを削除
+      await prisma.heading.deleteMany({
+        where: {
+          articleId: { in: articleIds },
+        },
       });
-
-      // 内部リンクを処理
-      const innerLinks = [];
-      for (const item of scrapyingResultItems) {
-        const criteriaArticleId = articleUrlMap.get(item.url);
-        if (criteriaArticleId) {
-          // 内部リンクを作成
-          for (const linkUrl of item.internal_links) {
-            const linkedArticleId = articleUrlMap.get(linkUrl);
-            if (linkedArticleId) {
-              innerLinks.push({
-                type: 'text',
-                criteriaArticleId,
-                linkedArticleId,
-                linkUrl,
-                anchorText: '', // スクレイピングデータにアンカーテキストがない場合は空文字
-              });
-            }
-          }
-        }
-      }
-
-      // 内部リンクを一括作成
-      if (innerLinks.length > 0) {
-        await prisma.innerLink.createMany({
-          data: innerLinks,
-          skipDuplicates: true,
-        });
-      }
-
-      // 見出しを処理
-      let headingsCreated = 0;
-      for (const item of scrapyingResultItems) {
-        const articleId = articleUrlMap.get(item.url);
-        if (articleId && item.headings && item.headings.length > 0) {
-          // 見出しの階層構造を処理
-          headingsCreated += await this.processHeadings(prisma, articleId, item.headings);
-        }
-      }
-
-      return {
-        articlesCreated: articles.count,
-        innerLinksCreated: innerLinks.length,
-        headingsCreated
-      };
+      
+      // 4. 記事を削除
+      const deleteResult = await prisma.article.deleteMany({
+        where: {
+          id: { in: articleIds },
+        },
+      });
+      
+      return deleteResult.count;
     });
   }
-
+  
+  /**
+   * 記事を作成
+   * @param projectId プロジェクトID
+   * @param article 記事DTO
+   * @returns 作成された記事
+   */
+  async createArticle(projectId: number, article: ArticleDto): Promise<Article> {
+    return this.prismaService.article.create({
+      data: {
+        projectId,
+        articleUrl: article.articleUrl,
+        metaTitle: article.metaTitle,
+        metaDescription: article.metaDescription,
+        isIndexable: article.isIndexable,
+      },
+    });
+  }
+  
+  /**
+   * 内部リンクを処理
+   * @param criteriaArticleId 基準記事ID
+   * @param projectId プロジェクトID
+   * @param internalLinks 内部リンク配列
+   * @returns 作成された内部リンクの数
+   */
+  async processInternalLinks(
+    criteriaArticleId: number,
+    projectId: number,
+    internalLinks: ArticleDto['internalLinks'],
+  ): Promise<number> {
+    let created = 0;
+    
+    for (const link of internalLinks) {
+      // リンク先の記事を検索または作成
+      const linkedArticle = await this.findOrCreateLinkedArticle(
+        projectId,
+        link.linkUrl,
+      );
+      
+      // 内部リンクを作成
+      await this.prismaService.innerLink.create({
+        data: {
+          criteriaArticleId,
+          linkedArticleId: linkedArticle.id,
+          linkUrl: link.linkUrl,
+          anchorText: link.anchorText || '',
+          rel: link.rel || '',
+          type: link.type,
+          isActive: link.isActive,
+        },
+      });
+      created += 1;
+    }
+    
+    return created;
+  }
+  
+  /**
+   * リンク先の記事を検索または作成
+   * @param projectId プロジェクトID
+   * @param linkUrl リンクURL
+   * @returns リンク先の記事
+   */
+  async findOrCreateLinkedArticle(
+    projectId: number,
+    linkUrl: string,
+  ): Promise<Article> {
+    const linkedArticle = await this.prismaService.article.findFirst({
+      where: {
+        projectId,
+        articleUrl: linkUrl,
+      },
+    });
+    
+    if (linkedArticle) {
+      return linkedArticle;
+    }
+    
+    // リンク先の記事が存在しない場合は作成
+    return this.prismaService.article.create({
+      data: {
+        projectId,
+        articleUrl: linkUrl,
+        metaTitle: '', // 後で更新される可能性あり
+        metaDescription: '',
+        isIndexable: true,
+      },
+    });
+  }
+  
   /**
    * 見出しの階層構造を処理して保存
-   * @param prisma Prismaクライアント
    * @param articleId 記事ID
    * @param headings 見出し配列
    * @param parentId 親見出しID
    * @param order 表示順序
    * @returns 作成された見出しの数
    */
-  private async processHeadings(
-    prisma: any,
+  async processHeadings(
     articleId: number,
-    headings: HeadingItem[],
+    headings: HeadingDto[],
     parentId: number = null,
-    order: number = 0
+    order: number = 0,
   ): Promise<number> {
-    let count = 0;
-
-    for (let i = 0; i < headings.length; i++) {
-      const heading = headings[i];
-      const level = parseInt(heading.tag?.substring(1) || heading.level.toString());
+    let created = 0;
+    let currentOrder = order;
+    
+    for (const heading of headings) {
+      // tagからlevelを抽出（例：h1 -> 1, h2 -> 2）
+      const level = parseInt(heading.tag.substring(1));
       
       // 見出しを作成
-      const createdHeading = await prisma.heading.create({
+      const createdHeading = await this.prismaService.heading.create({
         data: {
           articleId,
-          tag: heading.tag || `h${heading.level}`,
+          tag: heading.tag,
           text: heading.text,
           level,
           parentId,
-          order: order + i
-        }
+          order: currentOrder++,
+        },
       });
+      created += 1;
       
-      count++;
-
       // 子見出しを再帰的に処理
       if (heading.children && heading.children.length > 0) {
-        count += await this.processHeadings(
-          prisma,
+        created += await this.processHeadings(
           articleId,
           heading.children,
           createdHeading.id,
-          order + headings.length + i * 100 // 子要素の順序を親要素より大きくする
+          currentOrder * 100, // 子要素の順序を親要素より大きくする
         );
       }
     }
-
-    return count;
+    
+    return created;
   }
-
+  
   /**
-   * ユーザーIDに紐づくスクレイピング結果を取得
-   * @param userId 
-   * @returns 
+   * プロジェクトIDに紐づく記事を取得
+   * @param projectId プロジェクトID
+   * @returns 記事一覧
    */
-  async findByUserId(userId: number) {
+  async findByProjectId(projectId: number): Promise<Article[]> {
     return this.prismaService.article.findMany({
-      where: {
-        project: {
-          workspace: {
-            users: {
-              some: {
-                id: userId,
-              },
-            },
-          },
-        },
-      },
+      where: { projectId },
       include: {
         headings: {
           orderBy: {
@@ -192,43 +223,31 @@ export class ScrapingResultDao {
         },
       },
       orderBy: {
-        createdAt: 'desc',
+        id: 'asc',
       },
     });
   }
-
+  
   /**
-   * スクレイピング結果を更新
-   * @param id 
-   * @param data 
-   * @returns 
+   * 記事IDに紐づく記事を取得
+   * @param id 記事ID
+   * @returns 記事
    */
-  async update(id: string, data: Partial<CreateScrapingResultDto>) {
-    if (!data.scrapyingResultItems || data.scrapyingResultItems.length === 0) {
-      throw new Error('更新するデータがありません');
-    }
-
-    const item = data.scrapyingResultItems[0];
-    
-    return this.prismaService.article.update({
-      where: { id: parseInt(id) },
-      data: {
-        articleUrl: item.url,
-        metaTitle: item.title,
-        metaDescription: item.content,
-        isIndexable: item.index_status === 'index',
+  async findById(id: number): Promise<Article> {
+    return this.prismaService.article.findUnique({
+      where: { id },
+      include: {
+        headings: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+        innerLinks: {
+          include: {
+            linkedArticle: true,
+          },
+        },
       },
-    });
-  }
-
-  /**
-   * スクレイピング結果を削除
-   * @param id 
-   * @returns 
-   */
-  async delete(id: string) {
-    return this.prismaService.article.delete({
-      where: { id: parseInt(id) },
     });
   }
 }

@@ -31,6 +31,33 @@ export class UserDao {
   }
 
   /**
+   * ユーザーIDからユーザー情報とプロジェクト情報を取得
+   *
+   * @param {number} userId ユーザーID
+   * @returns {Promise<User>} ユーザーとプロジェクトの情報
+   */
+  async findOneWithProject(userId: number): Promise<User> {
+    return this.prismaService.user.findUnique({
+      where: { id: userId },
+      include: {
+        workspace: true,
+      },
+    });
+  }
+
+  /**
+   * ワークスペースIDからプロジェクトを取得
+   *
+   * @param {number} workspaceId ワークスペースID
+   * @returns {Promise<Project>} プロジェクト情報
+   */
+  async getProjectByWorkspaceId(workspaceId: number): Promise<any> {
+    return this.prismaService.project.findFirst({
+      where: { workspaceId },
+    });
+  }
+
+  /**
    * ユーザーの新規登録
    * ワークスペースとデフォルトプロジェクトも同時に作成
    *
@@ -66,7 +93,7 @@ export class UserDao {
 
   /**
    * 既存ユーザーにワークスペースとプロジェクトを作成して関連付ける
-   * 
+   *
    * @param {number} userId ユーザーID
    * @returns {Promise<User>} 更新されたユーザー情報
    */
@@ -102,7 +129,10 @@ export class UserDao {
    * @param userId
    * @param refreshToken
    */
-  async updateRefreshToken(userId: number, refreshToken: string): Promise<User> {
+  async updateRefreshToken(
+    userId: number,
+    refreshToken: string,
+  ): Promise<User> {
     return this.prismaService.user.update({
       where: {
         id: userId,

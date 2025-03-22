@@ -139,10 +139,10 @@ model Keyword {
 model Article {
   id              Int      @id @default(autoincrement()) @map("id")
   projectId       Int      @map("project_id")
-  articleUrl      String?  @map("article_url")
+  articleUrl      String   @map("article_url")
   metaTitle       String?  @map("meta_title")
   metaDescription String?  @map("meta_description")
-  isIndexable     Boolean? @map("is_indexable")
+  isIndexable     Boolean  @default(true) @map("is_indexable")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -152,18 +152,19 @@ model Article {
   linkedFrom InnerLink[]      @relation("ArticleLinked")
   headings   Heading[]        // 記事の見出し
 
+  @@unique([projectId, articleUrl])
   @@map("article")
 }
 
 // 見出し
 model Heading {
   id        Int      @id @default(autoincrement()) @map("id")
-  articleId Int      @map("article_id")
-  tag       String   @map("tag") // h1, h2, h3, h4
-  text      String   @map("text")
-  level     Int      @map("level") // 1, 2, 3, 4
-  parentId  Int?     @map("parent_id")
-  order     Int      @map("order") // 表示順序
+  articleId Int      @map("article_id")            // 記事ID
+  tag       String   @map("tag")                   // h1, h2, h3, h4
+  text      String   @map("text")                  // 見出しテキスト
+  level     Int      @map("level")                 // 1, 2, 3, 4（tagから自動計算）
+  parentId  Int?     @map("parent_id")             // 親見出しID
+  order     Int      @map("order")                 // 表示順序
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -191,18 +192,19 @@ model KeywordArticle {
 // 内部リンク
 model InnerLink {
   id                Int      @id @default(autoincrement()) @map("id")
-  type              String   @map("type")
-  criteriaArticleId Int      @map("criteria_article_id")
-  linkedArticleId   Int      @map("linked_article_id")
-  anchorText        String?  @map("anchor_text")
-  linkUrl           String   @map("link_url")
-  rel               String?  @map("rel")
-  isActive          Boolean  @default(true) @map("is_active")
+  type              String   @map("type")                  // OUTBOUND などのリンクタイプ
+  criteriaArticleId Int      @map("criteria_article_id")   // リンク元記事ID
+  linkedArticleId   Int      @map("linked_article_id")     // リンク先記事ID
+  anchorText        String?  @map("anchor_text")           // アンカーテキスト
+  linkUrl           String   @map("link_url")              // リンクURL
+  rel               String?  @map("rel")                   // follow/nofollow
+  isActive          Boolean  @default(true) @map("is_active") // アクティブ状態
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
   criteriaArticle Article @relation("ArticleCriteria", fields: [criteriaArticleId], references: [id])
   linkedArticle   Article @relation("ArticleLinked", fields: [linkedArticleId], references: [id])
 
+  @@unique([criteriaArticleId, linkedArticleId])
   @@map("inner_link")
 }

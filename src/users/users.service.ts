@@ -18,8 +18,28 @@ export class UsersService {
   }
 
   /**
+   * ユーザーIDからユーザー情報とプロジェクト情報を取得
+   *
+   * @param {number} userId ユーザーID
+   * @returns {Promise<User>} ユーザーとプロジェクトの情報
+   */
+  async findOneWithProject(userId: number): Promise<User> {
+    return this.userDao.findOneWithProject(userId);
+  }
+
+  /**
+   * ワークスペースIDからプロジェクトを取得
+   *
+   * @param {number} workspaceId ワークスペースID
+   * @returns {Promise<Project>} プロジェクト情報
+   */
+  async getProjectByWorkspaceId(workspaceId: number): Promise<any> {
+    return this.userDao.getProjectByWorkspaceId(workspaceId);
+  }
+
+  /**
    * 既存ユーザーにワークスペースとプロジェクトを作成して関連付ける
-   * 
+   *
    * @param {number} userId ユーザーID
    * @returns {Promise<User>} 更新されたユーザー情報
    */
@@ -53,7 +73,7 @@ export class UsersService {
 
   /**
    * リフレッシュトークンからユーザーを取得
-   * 
+   *
    * @param {string} refreshToken
    * @returns {Promise<User | undefined>}
    */

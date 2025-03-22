@@ -1,36 +1,46 @@
-import { Controller, Post, Body, Get, Put, Delete, Param, UseGuards, Req } from '@nestjs/common';
-import { ScrapingService } from './scraping.service';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { CreateScrapingResultDto } from './dto/create-scraping-result.dto';
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
-import { Article } from '@prisma/client';
+import { BulkCreateScrapingResultUsecase } from './usecase/bulk-create-scraping-result.usecase';
+import { ScrapingResultDao } from './dao/scraping-result.dao';
 
 @Controller('scraping')
-@UseGuards(JwtAuthGuard)
 export class ScrapingController {
-  constructor(private readonly scrapingService: ScrapingService) {}
+  constructor(
+    private readonly bulkCreateScrapingResultUsecase: BulkCreateScrapingResultUsecase,
+    private readonly scrapingResultDao: ScrapingResultDao,
+  ) {}
 
+  /**
+   * スクレイピング結果を一括保存
+   * @param createScrapingResultDto スクレイピング結果DTO
+   * @returns 保存結果の統計情報
+   */
   @Post()
-  async create(@Body() createScrapingResultDto: CreateScrapingResultDto, @Req() req) {
-    // ユーザーIDを設定
-    createScrapingResultDto.userId = req.user.id;
-    return this.scrapingService.create(createScrapingResultDto);
+  @UseGuards(JwtAuthGuard)
+  async bulkCreate(@Body() createScrapingResultDto: CreateScrapingResultDto) {
+    return this.bulkCreateScrapingResultUsecase.execute(createScrapingResultDto);
   }
 
-  @Get()
-  async findByUserId(@Req() req) {
-    return this.scrapingService.findByUserId(req.user.id);
+  /**
+   * プロジェクトIDに紐づく記事を取得
+   * @param projectId プロジェクトID
+   * @returns 記事一覧
+   */
+  @Get('project/:projectId')
+  @UseGuards(JwtAuthGuard)
+  async findByProjectId(@Param('projectId') projectId: string) {
+    return this.scrapingResultDao.findByProjectId(Number(projectId));
   }
 
-  @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateScrapingResultDto: Partial<CreateScrapingResultDto>,
-  ) {
-    return this.scrapingService.update(id, updateScrapingResultDto);
-  }
-
-  @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return this.scrapingService.delete(id);
+  /**
+   * 記事IDに紐づく記事を取得
+   * @param id 記事ID
+   * @returns 記事
+   */
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async findById(@Param('id') id: string) {
+    return this.scrapingResultDao.findById(Number(id));
   }
 }
