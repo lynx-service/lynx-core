@@ -15,6 +15,7 @@ import stylesheet from "./app.css?url";
 import { CiLight } from "react-icons/ci";
 import { MdDarkMode } from "react-icons/md";
 import { IconContext } from "react-icons/lib";
+import { Toaster } from "~/components/ui/toaster";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -124,6 +125,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         <ScrollRestoration />
         <Scripts />
+        
+        {/* Toasterコンポーネントを追加 */}
+        <Toaster />
       </body>
     </html>
   );

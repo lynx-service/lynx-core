@@ -8,7 +8,8 @@ import {
   DialogClose,
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
-import { X } from "lucide-react";
+import { X, Save } from "lucide-react";
+import { Form } from "react-router";
 import type { ArticleItem } from "~/types/article";
 import { ScrapingResultDisplay } from "./ScrapingResultDisplay";
 
