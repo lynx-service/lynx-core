@@ -216,17 +216,25 @@ export default function ScrapingResults() {
           {results.map(item => (
             <Card
               key={item.id}
-              className="h-full flex flex-col bg-white dark:bg-gray-800 transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 cursor-pointer"
+              className="group h-full flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-100/20 dark:hover:shadow-emerald-900/10 transform hover:-translate-y-1 hover:border-emerald-200 dark:hover:border-emerald-800 rounded-xl overflow-hidden cursor-pointer"
               onClick={() => {
                 setSelectedItem(item);
                 setIsDialogOpen(true);
               }}
             >
+
               {/* コンテンツ部分 */}
-              <CardHeader className="pb-2">
-                <CardTitle className="text-xl line-clamp-2">
-                  {item.metaTitle || "タイトルなし"}
-                </CardTitle>
+              <CardHeader className="pb-2 pt-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mr-2 text-emerald-600 dark:text-emerald-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <CardTitle className="text-xl line-clamp-2 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors duration-200">
+                    {item.metaTitle || "タイトルなし"}
+                  </CardTitle>
+                </div>
                 <CardDescription>
                   <a
                     href={item.articleUrl}
@@ -241,26 +249,49 @@ export default function ScrapingResults() {
               </CardHeader>
 
               <CardContent className="flex-grow">
-                <div className="text-gray-600 dark:text-gray-300 text-sm line-clamp-4">
+                <div className="text-gray-600 dark:text-gray-300 text-sm line-clamp-4 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-200">
                   {item.metaDescription || "コンテンツなし"}
                 </div>
               </CardContent>
 
-              {/* フッター部分（常に最下部） */}
-              <CardFooter className="bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 justify-between mt-auto">
-                <Badge 
-                  variant={item.isIndexable ? "default" : "destructive"}
-                  className={item.isIndexable
-                    ? "bg-green-100 hover:bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40"
-                    : "bg-red-100 hover:bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40"
-                  }
-                >
-                  {item.isIndexable ? "インデックス" : "ノーインデックス"}
-                </Badge>
+              {/* メトリクス表示 */}
+              <div className="px-6 py-3 grid grid-cols-2 gap-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">内部リンク</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.internalLinks?.length || 0}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">外部リンク</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400">{item.outerLinks?.length || 0}</span>
+                </div>
+              </div>
 
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  {item.internalLinks?.length || 0} リンク
-                </span>
+              {/* フッター部分（常に最下部） */}
+              <CardFooter className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 border-t border-gray-200 dark:border-gray-700 justify-between mt-auto py-3">
+                <div className="flex items-center space-x-1">
+                  <Badge 
+                    variant={item.isIndexable ? "default" : "destructive"}
+                    className={item.isIndexable
+                      ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
+                      : "bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40"
+                    }
+                  >
+                    {item.isIndexable ? "インデックス" : "ノーインデックス"}
+                  </Badge>
+                  
+                  {item.jsonLd && item.jsonLd.length > 0 && (
+                    <Badge className="bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/40">
+                      構造化データ
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
+                  </svg>
+                  {item.internalLinks?.length + item.outerLinks?.length || 0} リンク
+                </div>
               </CardFooter>
             </Card>
           ))}
