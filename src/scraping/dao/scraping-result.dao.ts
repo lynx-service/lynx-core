@@ -52,6 +52,13 @@ export class ScrapingResultDao {
         },
       });
 
+      // 3. 外部リンクを削除
+      await prisma.outerLink.deleteMany({
+        where: {
+          criteriaArticleId: { in: articleIds },
+        },
+      });
+
       // 4. 記事を削除
       const deleteResult = await prisma.article.deleteMany({
         where: {
