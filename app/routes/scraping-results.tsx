@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { ScrapingResultModal } from "~/components/scraping/ScrapingResultModal";
 import { useToast } from "~/hooks/use-toast";
 import { useResetAtom } from "jotai/utils";
+import type { HeadingItem } from "~/types/article";
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -61,7 +62,7 @@ function convertToArticleDto(article: ArticleItem) {
 }
 
 // 再帰的に見出しを変換する関数
-function convertHeadings(headings: HeadingItem[]) {
+function convertHeadings(headings: HeadingItem[]): any[] {
   return headings.map(heading => ({
     tag: heading.tag,
     text: heading.text,
@@ -72,28 +73,28 @@ function convertHeadings(headings: HeadingItem[]) {
 export const action = async ({ request }: Route.ActionArgs) => {
   // ログインチェック
   await requireAuth(request);
-  
+
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
-  
+
   const formData = await request.formData();
   const _action = formData.get("_action");
-  
+
   if (_action === "save") {
     try {
       // FormDataからarticlesDataを取得
       const articlesData = formData.get("articlesData");
-      
+
       if (!articlesData) {
-        return new Response(JSON.stringify({ 
-          ok: false, 
-          error: "記事データが見つかりません" 
+        return new Response(JSON.stringify({
+          ok: false,
+          error: "記事データが見つかりません"
         }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      
+
       // APIを呼び出し
       const response = await fetch("http://localhost:3000/scraping", {
         method: "POST",
@@ -106,34 +107,34 @@ export const action = async ({ request }: Route.ActionArgs) => {
           articles: JSON.parse(articlesData as string)
         })
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        return new Response(JSON.stringify({ 
-          ok: false, 
-          error: errorData.message || `API error: ${response.status}` 
+        return new Response(JSON.stringify({
+          ok: false,
+          error: errorData.message || `API error: ${response.status}`
         }), {
           status: response.status,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-      
+
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
     } catch (error) {
       console.error("Save error:", error);
-      return new Response(JSON.stringify({ 
-        ok: false, 
-        error: error instanceof Error ? error.message : "保存中にエラーが発生しました" 
+      return new Response(JSON.stringify({
+        ok: false,
+        error: error instanceof Error ? error.message : "保存中にエラーが発生しました"
       }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       });
     }
   }
-  
+
   return null;
 };
 
@@ -189,14 +190,14 @@ export default function ScrapingResults() {
               </svg>
               スクレイピング画面に戻る
             </Button>
-            
+
             {results.length > 0 && (
               <Form method="post">
                 <input type="hidden" name="_action" value="save" />
-                <input 
-                  type="hidden" 
-                  name="articlesData" 
-                  value={JSON.stringify(results.map(item => convertToArticleDto(item)))} 
+                <input
+                  type="hidden"
+                  name="articlesData"
+                  value={JSON.stringify(results.map(item => convertToArticleDto(item)))}
                 />
                 <Button
                   type="submit"
@@ -269,7 +270,7 @@ export default function ScrapingResults() {
               {/* フッター部分（常に最下部） */}
               <CardFooter className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 border-t border-gray-200 dark:border-gray-700 justify-between mt-auto py-3">
                 <div className="flex items-center space-x-1">
-                  <Badge 
+                  <Badge
                     variant={item.isIndexable ? "default" : "destructive"}
                     className={item.isIndexable
                       ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/40"
@@ -278,7 +279,7 @@ export default function ScrapingResults() {
                   >
                     {item.isIndexable ? "インデックス" : "ノーインデックス"}
                   </Badge>
-                  
+
                   {item.jsonLd && item.jsonLd.length > 0 && (
                     <Badge className="bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/40">
                       構造化データ
