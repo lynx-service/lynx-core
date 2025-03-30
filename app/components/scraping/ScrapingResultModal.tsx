@@ -9,7 +9,6 @@ import {
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { X, ExternalLink, Copy, Check } from "lucide-react";
-import { Form } from "react-router";
 import type { ArticleItem } from "~/types/article";
 import { ScrapingResultDisplay } from "./ScrapingResultDisplay";
 import { Badge } from "~/components/ui/badge";
@@ -37,9 +36,9 @@ export function ScrapingResultModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-background rounded-xl">
         {/* スティッキーヘッダー */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 rounded-t-xl shadow-sm">
+        <div className="sticky top-0 z-10 bg-background border-b border-gray-200 dark:border-gray-700 rounded-t-xl shadow-sm">
           <DialogHeader className="p-6 pb-4">
             <div className="flex items-center justify-between">
               <div className="flex-1">

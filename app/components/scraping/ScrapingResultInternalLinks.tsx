@@ -18,7 +18,7 @@ interface Props {
 export function ScrapingResultInternalLinks({ item }: Props) {
   return (
     <div className="border rounded-lg overflow-hidden">
-      <div className="bg-muted px-4 py-2 border-b flex items-center">
+      <div className="px-4 py-2 border-b flex items-center">
         <Link className="h-5 w-5 mr-2 text-muted-foreground" />
         <h3 className="text-lg font-medium text-foreground">内部リンク</h3>
       </div>
@@ -27,7 +27,7 @@ export function ScrapingResultInternalLinks({ item }: Props) {
           <div className="overflow-x-auto">
             <Table>
               <TableCaption>内部リンク一覧 - 合計: {item.internalLinks.length}件</TableCaption>
-              <TableHeader className="bg-muted">
+              <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs uppercase">アンカーテキスト</TableHead>
                   <TableHead className="text-xs uppercase">リンクURL</TableHead>

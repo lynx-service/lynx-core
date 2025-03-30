@@ -6,16 +6,10 @@ import {
   Scripts,
   ScrollRestoration,
   useMatches,
-  Form, // FormはSidebarとMobileSidebarで使うので残す
-  Link, // LinkはHeader, Sidebar, MobileSidebarで使うので残す
 } from "react-router";
 import { useState } from "react"; // useEffectはuseThemeフック内で使うので削除
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
-// アイコンはHeaderコンポーネントで使うので削除
-// import { CiLight } from "react-icons/ci";
-// import { MdDarkMode } from "react-icons/md";
-// import { IconContext } from "react-icons/lib";
 import { Toaster } from "~/components/ui/toaster";
 import { Header } from "~/components/layout/Header"; // Headerをインポート
 import { Sidebar } from "~/components/layout/Sidebar"; // Sidebarをインポート
@@ -93,7 +87,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {/* Main Content */}
           {/* サイドバーの有無に応じてマージンを調整 (md以上でサイドバー表示時) */}
           <main className={cn(
-            "flex-grow bg-muted p-6 text-muted-foreground",
+            "flex-grow p-6 text-muted-foreground",
             !isLoginPage && "md:ml-64" // デスクトップサイドバーの幅(w-64)分マージンを追加
           )}>
             {children}

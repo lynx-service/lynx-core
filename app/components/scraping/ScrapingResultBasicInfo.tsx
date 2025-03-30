@@ -8,12 +8,12 @@ interface Props {
 
 export function ScrapingResultBasicInfo({ item }: Props) {
   return (
-    <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 flex items-center">
+    <div className="border rounded-lg overflow-hidden">
+      <div className="bg-background px-4 py-2 border-b flex items-center">
         <Info className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">基本情報</h3>
       </div>
-      <div className="p-4 bg-white dark:bg-gray-800">
+      <div className="p-4 bg-background">
         <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
           {/* URL */}
           <div className="sm:col-span-2">

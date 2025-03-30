@@ -3,8 +3,6 @@ import { useLoaderData, useNavigate } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
 import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
-import { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "~/components/ui/card";
 import type { ArticleItem } from "~/types/article";
 import { useState, useEffect } from "react";
 import { ScrapingResultModal } from "~/components/scraping/ScrapingResultModal";
@@ -82,15 +80,15 @@ export default function Content() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-10">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500">
-                コンテンツ管理
-              </span>
-            </h1>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-blue-500">
+              コンテンツ管理
+            </span>
+          </h1>
             <p className="mt-2 text-gray-600 dark:text-gray-300">
               保存された{articles.length}件のコンテンツを表示します
             </p>
@@ -119,8 +117,9 @@ export default function Content() {
             </div>
 
             <Button
+              variant="outline"
               onClick={() => navigate("/scraping")}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="text-gray-900 dark:text-gray-100"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
@@ -141,7 +140,7 @@ export default function Content() {
         <ArticleGrid
           articles={filteredArticles} // フィルターされた記事を渡す
           onCardClick={handleCardClick}
-          cardVariant="blue" // Contentではblueテーマを使用
+          cardVariant="emerald" // emeraldテーマを使用
           noDataMessage="保存されたコンテンツがありません"
           noDataButtonText="スクレイピング画面へ"
           noDataButtonLink="/scraping"
