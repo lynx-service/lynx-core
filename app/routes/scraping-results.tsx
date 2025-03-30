@@ -141,11 +141,21 @@ export const action = async ({ request }: Route.ActionArgs) => {
 export default function ScrapingResults() {
   const { user } = useLoaderData();
   const [results] = useAtom(articlesAtom);
+  const resetArticles = useResetAtom(articlesAtom);
   const navigate = useNavigate();
   const [selectedItem, setSelectedItem] = useState<ArticleItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const actionData = useActionData();
   const { toast } = useToast();
+  const [saveCompleted, setSaveCompleted] = useState(false);
+
+  /**
+   * コンテンツ管理へボタンをクリックしたときの処理
+   */
+  const handleNavigateContent = () => {
+    resetArticles(); // articlesAtomをリセット
+    navigate("/content");
+  }
 
   // 保存結果に応じてトースト通知を表示
   useEffect(() => {
@@ -156,6 +166,8 @@ export default function ScrapingResults() {
           description: "スクレイピング結果をDBに保存しました",
           variant: "default",
         });
+
+        setSaveCompleted(true);
       } else {
         toast({
           title: "エラー",
@@ -191,7 +203,8 @@ export default function ScrapingResults() {
               スクレイピング画面に戻る
             </Button>
 
-            {results.length > 0 && (
+            {results.length > 0 && !saveCompleted ? (
+              // 保存が完了していない場合は「DBに保存する」ボタンを表示
               <Form method="post">
                 <input type="hidden" name="_action" value="save" />
                 <input
@@ -209,6 +222,17 @@ export default function ScrapingResults() {
                   DBに保存する
                 </Button>
               </Form>
+            ) : saveCompleted && (
+              // 保存が完了した場合は「コンテンツ管理へ」ボタンを表示
+              <Button
+                onClick={handleNavigateContent}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+                </svg>
+                コンテンツ管理へ
+              </Button>
             )}
           </div>
         </div>
