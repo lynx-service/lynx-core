@@ -1,34 +1,45 @@
-import { Link, Form } from "react-router";
+import { NavLink, Form, useLocation } from "react-router"; // NavLinkとuseLocationをインポート
 import { Button } from "~/components/ui/button";
-import { cn } from "~/lib/utils"; // Shadcn UIのユーティリティ関数
+import { cn } from "~/lib/utils";
+import { Home, Search, FileText, Settings, LogOut } from 'lucide-react'; // アイコンをインポート
 
 /**
  * デスクトップ用サイドバーナビゲーションコンポーネント
  */
 export function Sidebar() {
-  // ナビゲーションアイテムの定義
+  const location = useLocation(); // 現在のパスを取得
+
+  // ナビゲーションアイテムの定義 (アイコン追加)
   const navItems = [
-    { to: "/", label: "Dashboard" },
-    { to: "/scraping", label: "サイト分析" }, // パスを修正
-    { to: "/content", label: "コンテンツ管理" },
-    { to: "/users", label: "Users" },
-    { to: "/reports", label: "Reports" },
-    { to: "/settings", label: "Settings" },
+    { to: "/", label: "Dashboard", icon: Home },
+    { to: "/scraping", label: "サイト分析", icon: Search },
+    { to: "/content", label: "コンテンツ管理", icon: FileText },
+    // { to: "/users", label: "Users", icon: Users }, // 必要に応じて追加
+    // { to: "/reports", label: "Reports", icon: BarChart }, // 必要に応じて追加
+    { to: "/settings", label: "Settings", icon: Settings },
   ];
 
   return (
-    // md以上で表示、固定幅、高さ、背景、ボーダー、影
-    <aside className="hidden md:flex flex-col fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 border-r border-border/40 shadow-lg z-40">
+    // md以上で表示、固定幅、高さ、背景、ボーダー、影 - スタイルはshadcn/uiのテーマに沿うようにTailwindを使用
+    <aside className="hidden md:flex flex-col fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-background border-r z-40"> {/* bg-background, borderを使用 */}
       <nav className="flex flex-col h-full p-4">
         <div className="flex-grow space-y-1">
           {navItems.map((item) => (
             <Button
               key={item.label}
-              variant="ghost" // 背景なしボタン
-              className="w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700"
-              asChild // ButtonをLinkとして機能させる
+              variant="ghost"
+              className={cn(
+                "w-full justify-start",
+                location.pathname === item.to // 現在のパスと比較
+                  ? "bg-muted text-primary hover:bg-muted" // アクティブ時のスタイル (shadcn/uiのクラスを使用)
+                  : "text-muted-foreground hover:bg-muted hover:text-primary" // 非アクティブ時のスタイル
+              )}
+              asChild
             >
-              <Link to={item.to}>{item.label}</Link>
+              <NavLink to={item.to}>
+                <item.icon className="mr-2 h-4 w-4" /> {/* アイコン表示 */}
+                {item.label}
+              </NavLink>
             </Button>
           ))}
         </div>
@@ -37,8 +48,9 @@ export function Sidebar() {
           <Button
             type="submit"
             variant="ghost"
-            className="w-full justify-start text-gray-600 dark:text-gray-300 hover:text-zinc-50 hover:bg-red-700 dark:hover:bg-red-800"
+            className="w-full justify-start text-muted-foreground hover:bg-destructive hover:text-destructive-foreground" // ログアウトボタンのスタイル
           >
+            <LogOut className="mr-2 h-4 w-4" /> {/* ログアウトアイコン */}
             Logout
           </Button>
         </Form>
