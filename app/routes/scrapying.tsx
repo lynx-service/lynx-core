@@ -72,6 +72,31 @@ export default function Scrapying() {
   const { toast } = useToast(); // toastフックを取得
   const abortControllerRef = useRef<AbortController | null>(null); // AbortControllerを保持するref
 
+  // 状態をリセットする関数
+  const resetState = useCallback(() => {
+    console.log("Resetting state...");
+    setCrawlStatus('idle');
+    setProgressInfo(null);
+    setScrapedArticles([]);
+    setErrorMessage(null);
+    setJobId(null);
+    setGlobalScrapingResults([]);
+    
+    // AbortControllerがあれば中断
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, [setGlobalScrapingResults]);
+
+  // コンポーネントがアンマウントされる際にクリーンアップ
+  useEffect(() => {
+    return () => {
+      // コンポーネントのアンマウント時に状態をリセット
+      resetState();
+    };
+  }, [resetState]);
+
   // ナビゲーションブロッカーを設定 (crawlStatus に基づく)
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
@@ -301,13 +326,30 @@ export default function Scrapying() {
         throw new Error(errorDetail);
       }
 
-      // レスポンスヘッダーからJob-IDを取得
-      console.log("All response headers:", [...response.headers.entries()]); // すべてのヘッダーをログ出力
+      // すべてのレスポンスヘッダーをログ出力（デバッグ用）
+      const allHeaders = [...response.headers.entries()];
+      console.log("All response headers:", allHeaders);
       
-      const currentJobId = response.headers.get("x-job-id"); // ヘッダー名は小文字で取得
+      // ヘッダー名は大文字小文字を区別せずに検索
+      let foundJobId = null;
+      for (const [key, value] of allHeaders) {
+        if (key.toLowerCase() === 'x-job-id') {
+          foundJobId = value;
+          break;
+        }
+      }
+      
+      // 直接取得も試みる（小文字と大文字の両方）
+      const currentJobId = foundJobId || response.headers.get("x-job-id") || response.headers.get("X-Job-ID");
+      
       if (currentJobId) {
-        setJobId(currentJobId);
-        console.log("Received Job ID:", currentJobId); // ログ出力
+        console.log("Received Job ID:", currentJobId);
+        setJobId(currentJobId); // 状態を更新
+        
+        // 状態が更新されたことを確認するために非同期で確認
+        setTimeout(() => {
+          console.log("Current jobId state after update:", jobId);
+        }, 100);
         
         // デバッグ用: トーストでジョブIDを表示
         toast({
@@ -349,7 +391,7 @@ export default function Scrapying() {
        // AbortControllerの参照をクリア
        abortControllerRef.current = null;
     }
-  }, [token, processStream, setGlobalScrapingResults]); // 依存配列に token と processStream を追加
+  }, [token, processStream, setGlobalScrapingResults, resetState, toast, jobId]); // 依存配列を更新
 
   // スクレイピング結果の有無を確認 (ローカルstateを使用)
   const hasResults = scrapedArticles.length > 0;
