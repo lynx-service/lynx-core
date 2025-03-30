@@ -105,18 +105,6 @@ export function ScrapingResultModal({
                 {copied ? "コピー済み" : "URLをコピー"}
               </Button>
             </DialogDescription>
-            
-            {/* メトリクスサマリー */}
-            <div className="mt-4 grid grid-cols-2 gap-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-              <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">内部リンク</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.internalLinks?.length || 0}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">外部リンク</span>
-                <span className="font-semibold text-blue-600 dark:text-blue-400">{item.outerLinks?.length || 0}</span>
-              </div>
-            </div>
           </DialogHeader>
         </div>
 

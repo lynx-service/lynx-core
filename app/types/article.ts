@@ -71,8 +71,8 @@ export interface ArticleItem {
   metaTitle: string;
   metaDescription: string;
   isIndexable?: boolean;
-  internalLinks?: InternalLinkItem[];
-  outerLinks?: OuterLinkItem[]; // 外部リンク
+  internalLinks: InternalLinkItem[];
+  outerLinks: OuterLinkItem[]; // 外部リンク
   linkedFrom?: InternalLinkItem[];
   headings?: HeadingItem[];
   keywords?: KeywordArticleItem[];
