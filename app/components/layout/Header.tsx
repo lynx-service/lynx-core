@@ -19,7 +19,7 @@ interface HeaderProps {
  */
 export function Header({ theme, toggleTheme, onOpenMobileSidebar }: HeaderProps) {
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-md fixed top-0 left-0 w-full z-50 border-b border-border/40">
+    <header className="bg-background shadow-md fixed top-0 left-0 w-full z-50 border-b border-border/40">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         {/* ロゴ */}
         <Link to="/" className="flex items-center">
@@ -36,7 +36,7 @@ export function Header({ theme, toggleTheme, onOpenMobileSidebar }: HeaderProps)
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="text-gray-600 dark:text-gray-300 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none"
+            className="text-muted-foreground hover:text-primary focus:outline-none"
             aria-label={theme === "light" ? "ダークモードに切り替え" : "ライトモードに切り替え"}
           >
             <IconContext.Provider value={{ size: "1.5rem" }}>
@@ -50,7 +50,7 @@ export function Header({ theme, toggleTheme, onOpenMobileSidebar }: HeaderProps)
               variant="ghost"
               size="icon"
               onClick={onOpenMobileSidebar} // クリックでモバイルサイドバーを開く
-              className="text-gray-600 dark:text-gray-300"
+              className="text-muted-foreground"
               aria-label="ナビゲーションメニューを開く"
             >
               <MdMenu size={24} />

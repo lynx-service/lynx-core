@@ -53,7 +53,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
                   // buttonVariantsとcnを使ってスタイルを適用
                   className={cn(
                     buttonVariants({ variant: "ghost" }), // 基本的なボタンスタイル
-                    "w-full justify-start text-gray-600 dark:text-gray-300 hover:bg-emerald-600 hover:text-zinc-100 dark:hover:bg-gray-700" // カスタムスタイル
+                    "w-full justify-start text-muted-foreground hover:bg-primary hover:text-primary-foreground" // カスタムスタイル
                   )}
                 >
                   {item.label}
@@ -68,7 +68,7 @@ export function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
               <Button
                 type="submit"
                 variant="ghost"
-                className="w-full justify-start text-gray-600 dark:text-gray-300 hover:text-zinc-50 hover:bg-red-700 dark:hover:bg-red-800"
+                className="w-full justify-start text-muted-foreground hover:text-destructive-foreground hover:bg-destructive"
               >
                 Logout
               </Button>

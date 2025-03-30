@@ -17,17 +17,17 @@ interface Props {
 
 export function ScrapingResultInternalLinks({ item }: Props) {
   return (
-    <div className="border dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b dark:border-gray-700 flex items-center">
-        <Link className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">内部リンク</h3>
+    <div className="border rounded-lg overflow-hidden">
+      <div className="bg-muted px-4 py-2 border-b flex items-center">
+        <Link className="h-5 w-5 mr-2 text-muted-foreground" />
+        <h3 className="text-lg font-medium text-foreground">内部リンク</h3>
       </div>
-      <div className="p-4 bg-white dark:bg-gray-800">
+      <div className="p-4 bg-card">
         {item.internalLinks && item.internalLinks.length > 0 ? (
           <div className="overflow-x-auto">
             <Table>
               <TableCaption>内部リンク一覧 - 合計: {item.internalLinks.length}件</TableCaption>
-              <TableHeader className="bg-gray-50 dark:bg-gray-800">
+              <TableHeader className="bg-muted">
                 <TableRow>
                   <TableHead className="text-xs uppercase">アンカーテキスト</TableHead>
                   <TableHead className="text-xs uppercase">リンクURL</TableHead>
@@ -47,7 +47,7 @@ export function ScrapingResultInternalLinks({ item }: Props) {
                         href={link.linkUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere"
+                        className="text-primary hover:underline break-all overflow-wrap-anywhere"
                       >
                         {link.linkUrl}
                       </a>
@@ -60,9 +60,9 @@ export function ScrapingResultInternalLinks({ item }: Props) {
                         }
                         className={link.isFollow !== undefined 
                           ? (link.isFollow 
-                              ? "bg-green-100 hover:bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40" 
-                              : "bg-red-100 hover:bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40")
-                          : "bg-gray-100 hover:bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400 dark:hover:bg-gray-900/40"
+                              ? "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
+                              : "bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-400")
+                          : "bg-gray-100 hover:bg-gray-200 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
                         }
                       >
                         {link.isFollow !== undefined ? (link.isFollow ? 'follow' : 'nofollow') : '不明'}
@@ -80,10 +80,10 @@ export function ScrapingResultInternalLinks({ item }: Props) {
                           }
                           className={
                             link.status.code === 200 
-                              ? "bg-green-100 hover:bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/40" 
+                              ? "bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
                               : link.status.code === 301 || link.status.code === 302
-                                ? "bg-yellow-100 hover:bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/40"
-                                : "bg-red-100 hover:bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/40"
+                                ? "bg-yellow-100 hover:bg-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                                : "bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-400"
                           }
                         >
                           {link.status.code}
@@ -96,7 +96,7 @@ export function ScrapingResultInternalLinks({ item }: Props) {
                           href={link.status.redirectUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere"
+                          className="text-primary hover:underline break-all overflow-wrap-anywhere"
                         >
                           {link.status.redirectUrl}
                         </a>
@@ -108,7 +108,7 @@ export function ScrapingResultInternalLinks({ item }: Props) {
             </Table>
           </div>
         ) : (
-          <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+          <div className="text-center py-4 text-muted-foreground">
             内部リンクがありません
           </div>
         )}

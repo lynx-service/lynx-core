@@ -93,7 +93,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           {/* Main Content */}
           {/* サイドバーの有無に応じてマージンを調整 (md以上でサイドバー表示時) */}
           <main className={cn(
-            "flex-grow bg-gray-100 dark:bg-gray-800 p-6 text-gray-600 dark:text-gray-300",
+            "flex-grow bg-muted p-6 text-muted-foreground",
             !isLoginPage && "md:ml-64" // デスクトップサイドバーの幅(w-64)分マージンを追加
           )}>
             {children}

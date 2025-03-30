@@ -64,7 +64,7 @@ export function ArticleGrid({
         articles.map((item: ArticleItem) => (
           <Card
             key={item.id}
-            className={`group h-full flex flex-col bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:shadow-xl ${theme.hoverShadow} transform hover:-translate-y-1 ${theme.hoverBorder} rounded-xl overflow-hidden cursor-pointer`}
+            className={`group h-full flex flex-col bg-gradient-to-br from-card to-background border border-border transition-all duration-300 hover:shadow-xl ${theme.hoverShadow} transform hover:-translate-y-1 ${theme.hoverBorder} rounded-xl overflow-hidden cursor-pointer`}
             onClick={() => onCardClick(item)}
           >
             {/* コンテンツ部分 */}
@@ -85,7 +85,7 @@ export function ArticleGrid({
                   href={item.articleUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline truncate block" // URLの色は共通
+                  className="text-primary hover:underline truncate block" // URLの色は共通
                   onClick={(e) => e.stopPropagation()}
                 >
                   {item.articleUrl}
@@ -94,25 +94,25 @@ export function ArticleGrid({
             </CardHeader>
 
             <CardContent className="flex-grow">
-              <div className="text-gray-600 dark:text-gray-300 text-sm line-clamp-4 group-hover:text-gray-800 dark:group-hover:text-gray-200 transition-colors duration-200">
+              <div className="text-muted-foreground text-sm line-clamp-4 group-hover:text-foreground transition-colors duration-200">
                 {item.metaDescription || "コンテンツなし"}
               </div>
             </CardContent>
 
             {/* メトリクス表示 */}
-            <div className="px-6 py-3 grid grid-cols-2 gap-2 border-t border-gray-100 dark:border-gray-800">
+            <div className="px-6 py-3 grid grid-cols-2 gap-2 border-t border-border/40">
               <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">内部リンク</span>
+                <span className="text-xs text-muted-foreground">内部リンク</span>
                 <span className={`font-semibold ${theme.internalLinkColor}`}>{item.internalLinks?.length || 0}</span>
               </div>
               <div className="flex flex-col items-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">外部リンク</span>
+                <span className="text-xs text-muted-foreground">外部リンク</span>
                 <span className={`font-semibold ${theme.externalLinkColor}`}>{item.outerLinks?.length || 0}</span>
               </div>
             </div>
 
             {/* フッター部分（常に最下部） */}
-            <CardFooter className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-900/50 border-t border-gray-200 dark:border-gray-700 justify-between mt-auto py-3">
+            <CardFooter className="bg-gradient-to-r from-muted/50 to-muted border-t border-border/40 justify-between mt-auto py-3">
               <div className="flex items-center space-x-1">
                 <Badge
                   variant={item.isIndexable ? "default" : "destructive"}
@@ -131,7 +131,7 @@ export function ArticleGrid({
                 )}
               </div>
 
-              <div className="flex items-center text-gray-500 dark:text-gray-400 text-xs">
+              <div className="flex items-center text-muted-foreground text-xs">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clipRule="evenodd" />
                 </svg>
@@ -143,13 +143,13 @@ export function ArticleGrid({
       ) : (
         <Card className="p-8 text-center animate-fade-in col-span-1 md:col-span-2 lg:col-span-3">
           <CardContent className="flex flex-col items-center pt-6">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="mt-4 text-lg font-medium text-foreground">
               {searchTerm ? "検索結果なし" : "データなし"}
             </h3>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
+            <p className="mt-2 text-muted-foreground">
               {searchTerm ? "検索条件に一致するコンテンツがありません" : noDataMessage}
             </p>
           </CardContent>
