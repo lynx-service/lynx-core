@@ -17,9 +17,10 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react"; // useRef を追加
 import { useAtom } from "jotai";
 import { articlesAtom } from "~/atoms/article";
+import { useToast } from "~/hooks/use-toast"; // useToast をインポート
 // ScrapedArticle 型をインポート (app/types/article.ts に移動推奨)
 import type { ArticleItem } from "~/types/article";
 
@@ -66,7 +67,10 @@ export default function Scrapying() {
   const [progressInfo, setProgressInfo] = useState<ProgressInfo | null>(null);
   const [scrapedArticles, setScrapedArticles] = useState<ArticleItem[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null); // ジョブIDの状態を追加
   const [, setGlobalScrapingResults] = useAtom(articlesAtom); // Jotai atom の setter
+  const { toast } = useToast(); // toastフックを取得
+  const abortControllerRef = useRef<AbortController | null>(null); // AbortControllerを保持するref
 
   // ナビゲーションブロッカーを設定 (crawlStatus に基づく)
   const blocker = useBlocker(
@@ -82,6 +86,81 @@ export default function Scrapying() {
       targetClass: "",
     },
   });
+
+  // 中断処理関数
+  const handleCancelScraping = useCallback(async (isNavigating = false) => {
+    if (!jobId) {
+      console.warn("Cannot cancel scraping: Job ID is not set.");
+      // ジョブIDがない場合でも、フロントエンドの状態はリセットする
+      setCrawlStatus('idle');
+      setJobId(null);
+      setProgressInfo(null);
+      // AbortControllerがあれば中断を試みる
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+        console.log("Fetch aborted by frontend.");
+      }
+      if (!isNavigating) { // ページ遷移時以外はトースト表示
+        toast({
+          title: "中断処理",
+          description: "スクレイピング処理を中断しました（ジョブID不明）。",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+
+    console.log(`Attempting to cancel job: ${jobId}`);
+    // AbortControllerでfetch自体を中断
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      console.log("Fetch aborted by frontend.");
+    }
+
+    try {
+      const stopResponse = await fetch(`/api/crawl/stop/${jobId}`, {
+        method: "POST",
+      });
+
+      const result = await stopResponse.json();
+
+      if (stopResponse.ok) {
+        console.log(`Stop signal sent successfully for job: ${jobId}`);
+        if (!isNavigating) {
+          toast({
+            title: "中断リクエスト送信",
+            description: result.message || `スクレイピングジョブ ${jobId} の中断リクエストを送信しました。`,
+          });
+        }
+      } else {
+        console.error(`Failed to send stop signal for job: ${jobId}`, result);
+        if (!isNavigating) {
+          toast({
+            title: "中断リクエスト失敗",
+            description: result.detail || `ジョブ ${jobId} の中断に失敗しました。`,
+            variant: "destructive",
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error sending stop signal for job: ${jobId}`, error);
+      if (!isNavigating) {
+        toast({
+          title: "中断リクエストエラー",
+          description: `ジョブ ${jobId} の中断リクエスト送信中にエラーが発生しました。`,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      // API呼び出し成否に関わらずフロントエンドの状態をリセット
+      setCrawlStatus('idle');
+      setJobId(null);
+      setProgressInfo(null);
+      // blocker.proceed() は呼び出し元で行う
+    }
+  }, [jobId, toast]); // jobId と toast を依存配列に追加
 
   // ストリーム処理関数
   const processStream = useCallback(async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
@@ -189,7 +268,9 @@ export default function Scrapying() {
     setProgressInfo(null);
     setScrapedArticles([]); // ローカルstateもリセット
     setErrorMessage(null);
+    setJobId(null); // jobIdもリセット
     setGlobalScrapingResults([]); // Jotaiもリセット
+    abortControllerRef.current = new AbortController(); // 新しいAbortControllerを作成
 
     try {
       // APIエンドポイントをプロキシ経由の相対パスに変更
@@ -203,6 +284,7 @@ export default function Scrapying() {
           start_url: values.startUrl,
           target_class: values.targetClass
         }),
+        signal: abortControllerRef.current.signal, // AbortControllerのsignalを渡す
       });
 
       if (!response.ok) {
@@ -219,6 +301,32 @@ export default function Scrapying() {
         throw new Error(errorDetail);
       }
 
+      // レスポンスヘッダーからJob-IDを取得
+      console.log("All response headers:", [...response.headers.entries()]); // すべてのヘッダーをログ出力
+      
+      const currentJobId = response.headers.get("x-job-id"); // ヘッダー名は小文字で取得
+      if (currentJobId) {
+        setJobId(currentJobId);
+        console.log("Received Job ID:", currentJobId); // ログ出力
+        
+        // デバッグ用: トーストでジョブIDを表示
+        toast({
+          title: "スクレイピング開始",
+          description: `ジョブID: ${currentJobId}`,
+        });
+      } else {
+        console.warn("X-Job-ID header not found in response.");
+        // ジョブIDがない場合、中断はできないが処理は続行する
+        
+        // デバッグ用: トーストで警告を表示
+        toast({
+          title: "警告",
+          description: "ジョブIDが取得できませんでした。中断機能が使用できません。",
+          variant: "destructive",
+        });
+      }
+
+
       if (!response.body) {
         throw new Error("レスポンスボディがありません");
       }
@@ -227,9 +335,19 @@ export default function Scrapying() {
       await processStream(reader); // ストリーム処理を開始
 
     } catch (err) {
-      console.error("Scraping request failed:", err);
-      setErrorMessage(err instanceof Error ? err.message : "スクレイピングリクエストの送信中にエラーが発生しました");
-      setCrawlStatus('error');
+       if (err instanceof Error && err.name === 'AbortError') {
+        console.log("Fetch aborted.");
+        // 中断された場合はエラーメッセージを設定しないか、専用のメッセージを設定
+        // setErrorMessage("スクレイピングが中断されました。");
+        // setCrawlStatus('idle'); // handleCancelScrapingで状態はリセットされるはず
+      } else {
+        console.error("Scraping request failed:", err);
+        setErrorMessage(err instanceof Error ? err.message : "スクレイピングリクエストの送信中にエラーが発生しました");
+        setCrawlStatus('error');
+      }
+    } finally {
+       // AbortControllerの参照をクリア
+       abortControllerRef.current = null;
     }
   }, [token, processStream, setGlobalScrapingResults]); // 依存配列に token と processStream を追加
 
@@ -257,10 +375,10 @@ export default function Scrapying() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => {
-                  // TODO: ストリームを中断する処理を追加する (AbortControllerなど)
-                  setCrawlStatus('idle'); // 状態をリセット
-                  blocker.proceed();
+                onClick={async () => {
+                  // ストリーム中断処理を呼び出す
+                  await handleCancelScraping(true); // ページ遷移を伴う中断
+                  blocker.proceed(); // 中断処理後にページ遷移
                 }}
               >
                 移動する
@@ -430,6 +548,18 @@ export default function Scrapying() {
                       </div>
                     ) : "サイト分析を開始する"}
                   </Button>
+
+                  {/* 中断ボタン */}
+                  {crawlStatus === 'running' && (
+                    <Button
+                      type="button" // submitさせないようにtype="button"を指定
+                      variant="destructive"
+                      onClick={() => handleCancelScraping(false)} // ページ遷移なしの中断
+                      className="mt-4 w-full"
+                    >
+                      スクレイピングを中断する
+                    </Button>
+                  )}
                 </div>
               </form>
             </Form>

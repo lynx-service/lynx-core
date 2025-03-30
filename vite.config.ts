@@ -19,6 +19,17 @@ export default defineConfig({
         target: 'http://localhost:8000', // バックエンドサーバーのアドレス
         changeOrigin: true, // オリジンを変更
         rewrite: (path) => path.replace(/^\/api/, ''), // パスから /api を削除
+        configure: (proxy, _options) => {
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            // カスタムヘッダーをクライアントに転送
+            const jobId = proxyRes.headers['x-job-id'];
+            if (jobId) {
+              console.log('Proxy received X-Job-ID:', jobId);
+              // ヘッダーを明示的に設定
+              res.setHeader('X-Job-ID', jobId);
+            }
+          });
+        },
       },
     },
   },
