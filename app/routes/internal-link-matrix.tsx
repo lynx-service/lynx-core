@@ -115,9 +115,9 @@ export default function InternalLinkMatrixRoute() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)] overflow-x-hidden">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] overflow-hidden">
       {/* ページヘッダー（固定表示されない） */}
-      <div className="container py-6">
+      <div className="container py-6 max-w-7xl">
         <h1 className="text-2xl font-bold">内部リンク マトリクス</h1>
         <p className="text-muted-foreground">
           記事間の内部リンクの有無をマトリクス形式で表示します。行がリンク元、列がリンク先です。
@@ -126,7 +126,7 @@ export default function InternalLinkMatrixRoute() {
 
       {/* 統計情報表示 */}
       {articles && articles.length > 0 && (
-        <div className="container">
+        <div className="container max-w-7xl">
           <MatrixStats articles={articles} />
         </div>
       )}
@@ -153,8 +153,8 @@ export default function InternalLinkMatrixRoute() {
       />
 
       {/* マトリクス表示エリア（スクロール可能） */}
-      <div className="flex-grow container py-4">
-        <div className={`border rounded-lg overflow-hidden max-w-full ${isSidebarOpen ? 'lg:pr-[540px]' : ''}`}>
+      <div className="flex-grow py-4 w-full overflow-hidden">
+        <div className={`border rounded-lg overflow-x-auto max-w-7xl ${isSidebarOpen ? 'lg:pr-[540px]' : ''}`}>
           {filteredArticles && filteredArticles.length > 0 ? (
             <InternalLinkMatrix
               articles={filteredArticles}

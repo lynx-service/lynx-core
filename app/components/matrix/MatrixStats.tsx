@@ -49,7 +49,7 @@ export default function MatrixStats({ articles }: MatrixStatsProps) {
     : 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 max-w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 w-full overflow-x-auto pb-2">
       {/* 総記事数と内部リンク密度 */}
       <Card>
         <CardHeader className="pb-2">

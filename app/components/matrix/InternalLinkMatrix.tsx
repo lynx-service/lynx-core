@@ -64,8 +64,8 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
 
   return (
     <TooltipProvider>
-      <div className="overflow-x-auto relative w-full" style={{ scrollbarWidth: 'thin' }}> {/* 横スクロール可能にする */}
-        <Table className="min-w-full border w-max"> {/* テーブル全体の最小幅とボーダー */}
+      <div className="overflow-x-auto relative w-full" style={{ scrollbarWidth: 'thin' }}>
+        <Table className="border w-max"> {/* w-max を使用して内容に合わせた幅を確保 */}
           <TableHeader>
             <TableRow>
               {/* 左上の空セル */}
