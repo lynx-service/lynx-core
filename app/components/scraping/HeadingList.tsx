@@ -1,4 +1,4 @@
-import type { HeadingItem } from "~/atoms/scrapingResults";
+import type { HeadingItem } from "~/types/article";
 
 interface Props {
   headings: HeadingItem[];

@@ -4,7 +4,7 @@
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-background;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
@@ -13,57 +13,121 @@ body {
 
 @layer base {
   :root {
+    /* ベースカラー */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 11%;
+    
+    /* カード */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
+    
+    /* ポップオーバー */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* プライマリ - ティール系 (#135352) */
+    --primary: 179 64% 20%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    
+    /* セカンダリ - 薄いティール */
+    --secondary: 179 64% 90%;
+    --secondary-foreground: 179 64% 15%;
+    
+    /* ミュート */
+    --muted: 179 15% 96%;
+    --muted-foreground: 179 16% 47%;
+    
+    /* アクセント - 薄いティール */
+    --accent: 179 64% 90%;
+    --accent-foreground: 179 64% 15%;
+    
+    /* 警告色 */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    
+    /* 成功色 */
+    --success: 142 70% 45%;
+    --success-foreground: 210 40% 98%;
+    
+    /* 警告色 */
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 40% 98%;
+    
+    /* 情報色 */
+    --info: 199 89% 48%;
+    --info-foreground: 210 40% 98%;
+    
+    /* その他 */
+    --border: 179 31.8% 91.4%;
+    --input: 179 31.8% 91.4%;
+    --ring: 179 64% 20%;
+    
+    /* チャート色 */
+    --chart-1: 179 64% 20%; /* ティール */
+    --chart-2: 199 89% 48%; /* シアン */
+    --chart-3: 142 70% 45%; /* グリーン */
+    --chart-4: 38 92% 50%;  /* イエロー */
+    --chart-5: 0 84% 60%;   /* レッド */
+    
     --radius: 0.5rem;
   }
+  
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* ベースカラー */
+    --background: 222 20% 11%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    
+    /* カード */
+    --card: 222 20% 11%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    
+    /* ポップオーバー */
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    
+    /* プライマリ - ティール系 (#135352) - ダークモードでは明度を上げる */
+    --primary: 179 64% 30%;
+    --primary-foreground: 210 40% 98%;
+    
+    /* セカンダリ - 暗いティール */
+    --secondary: 179 30% 20%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    
+    /* ミュート */
+    --muted: 179 30% 20%;
+    --muted-foreground: 179 20% 65%;
+    
+    /* アクセント - 暗いティール */
+    --accent: 179 30% 20%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    
+    /* 警告色 */
+    --destructive: 0 62% 50%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    
+    /* 成功色 */
+    --success: 142 70% 40%;
+    --success-foreground: 210 40% 98%;
+    
+    /* 警告色 */
+    --warning: 38 92% 45%;
+    --warning-foreground: 210 40% 98%;
+    
+    /* 情報色 */
+    --info: 199 89% 43%;
+    --info-foreground: 210 40% 98%;
+    
+    /* その他 */
+    --border: 179 30% 20%;
+    --input: 179 30% 20%;
+    --ring: 179 64% 30%;
+    
+    /* チャート色 */
+    --chart-1: 179 64% 30%; /* ティール */
+    --chart-2: 199 89% 43%; /* シアン */
+    --chart-3: 142 70% 40%; /* グリーン */
+    --chart-4: 38 92% 45%;  /* イエロー */
+    --chart-5: 0 62% 50%;   /* レッド */
   }
 }
 

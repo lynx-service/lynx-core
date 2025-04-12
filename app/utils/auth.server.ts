@@ -4,6 +4,8 @@ import { getSession, commitSession } from "./session.server";
 export async function requireAuth(request: Request) {
   const session = await getSession(request.headers.get("Cookie"));
 
+  console.log("認証チェック")
+
   const accessToken = session.get("token");
   const refreshToken = session.get("refreshToken");
 

@@ -1,152 +1,71 @@
 import type { Route } from "./+types/home";
-import { useLoaderData, useActionData, Form as RouterForm, useSubmit, useNavigate } from "react-router";
+import { useLoaderData, useNavigate, useBlocker } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "~/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { Badge } from "~/components/ui/badge";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { scrapyRequestSchema, type ScrapyRequest } from "~/share/zod/schemas";
-import { useState, useEffect } from "react";
-import { useAtom } from "jotai";
-import { scrapingResultsAtom, type EditableScrapingResultItem, type HeadingItem, type InternalLinkItem } from "~/atoms/scrapingResults";
-import { v4 as uuidv4 } from "uuid";
-
-// shadcn/uiコンポーネント
-import { Button } from "~/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "~/components/ui/form";
-import { Input } from "~/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import { Skeleton } from "~/components/ui/skeleton";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "~/components/ui/tooltip";
-import { ClientOnly } from "~/components/ui/client-only";
-import { AlertTriangle, Info, Search, FileText } from "lucide-react";
+import { useScraping } from "~/hooks/use-scraping";
+import type { UseScrapingReturn } from "~/types/scraping";
+import { NavigationBlocker } from "~/components/scraping/NavigationBlocker";
+import { PageHeader } from "~/components/scraping/PageHeader";
+import { ScrapingStatus } from "~/components/scraping/ScrapingStatus";
+import { ScrapingForm } from "~/components/scraping/ScrapingForm";
+import { ScrapingResultsList } from "~/components/scraping/ScrapingResultsList";
+import { useEffect } from "react";
 
 export function meta({ }: Route.MetaArgs) {
   return [
-    { title: "サイト分析ツール" },
-    { name: "description", content: "ウェブサイトの構造を分析します" },
+    { title: "サイト分析実行 - LYNX" },
+    { name: "description", content: "URLとクラス名を入力してサイト分析を実行します。" },
   ];
 }
 
 export const loader = async ({ request }: Route.LoaderArgs) => {
   // ログインチェック
   await requireAuth(request);
-
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
-  const refreshToken = session.get("refreshToken");
-  const user = session.get("user");
 
-  const res = await fetch("http://localhost:3000/hello", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    }
-  });
-
-  if (!res.ok) {
-    throw new Response("Failed to fetch data", { status: res.status });
+  if (!token) {
+    throw new Response("認証トークンが見つかりません", { status: 401 });
   }
 
-  const data: string = await res.text();
-  return { data, user, token, refreshToken };
+  // 認証トークンをクライアントに渡す
+  return { token };
 };
 
-export const action = async ({ request }: Route.ActionArgs) => {
-  // ログインチェック
-  await requireAuth(request);
-
-  const session = await getSession(request.headers.get("Cookie"));
-  const token = session.get("token");
-  const refreshToken = session.get("refreshToken");
-  const user = session.get("user");
-
-  // フォームデータを取得
-  const formData = await request.formData();
-  const startUrl = formData.get("startUrl") as string;
-  const targetClass = formData.get("targetClass") as string;
-
-  // バリデーション
-  const result = scrapyRequestSchema.safeParse({ startUrl, targetClass });
-  if (!result.success) {
-    return {
-      ok: false,
-      error: "入力データが不正です",
-      validationErrors: result.error.format()
-    };
-  }
-
-  try {
-    // FastAPIエンドポイントを呼び出す
-    const response = await fetch("http://localhost:8000/crawl/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        // "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        start_url: result.data.startUrl,
-        target_class: result.data.targetClass
-      }),
-    });
-
-    console.log(response);
-
-    if (!response.ok) {
-      return {
-        ok: false,
-        error: `API error: ${response.status}`
-      };
-    }
-
-    const data = await response.json();
-
-    return {
-      ok: true,
-      data,
-      token,
-      refreshToken
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "スクレイピング中にエラーが発生しました"
-    };
-  }
-};
-
-// 階層構造の見出しデータを処理する関数
-const processHeadings = (headings: any[]): HeadingItem[] => {
-  return headings.map(heading => ({
-    tag: heading.tag || "",
-    text: heading.text || "",
-    children: heading.children ? processHeadings(heading.children) : []
-  }));
-};
-
+/**
+ * スクレイピング実行ページ
+ * モダンなUI/UXを実現するためにレイアウトを改善
+ */
 export default function Scrapying() {
-  const { data, user, token, refreshToken } = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
-  const submit = useSubmit();
+  // useLoaderData から token を取得
+  const { token } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [, setScrapingResults] = useAtom(scrapingResultsAtom);
 
-  const form = useForm<ScrapyRequest>({
+  // カスタムフックを使用してスクレイピング機能を取得
+  const {
+    crawlStatus,
+    progressInfo,
+    errorMessage,
+    scrapedArticles,
+    jobId,
+    startScraping,
+    cancelScraping
+  }: UseScrapingReturn = useScraping(token);
+
+  // ナビゲーションブロッカーを設定
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      crawlStatus === 'running' && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // フォームを設定
+  const form = useForm({
     resolver: zodResolver(scrapyRequestSchema),
     defaultValues: {
       startUrl: "",
@@ -154,213 +73,143 @@ export default function Scrapying() {
     },
   });
 
-  // フォーム送信時の処理
-  const onSubmit = (values: ScrapyRequest) => {
-    setIsSubmitting(true);
+  // 結果の有無を確認
+  const hasResults = scrapedArticles.length > 0;
 
-    // FormDataを手動で作成
-    const formData = new FormData();
-    formData.append("startUrl", values.startUrl);
-    formData.append("targetClass", values.targetClass);
-
-    // React Router v7のsubmit関数を使用してフォームを送信
-    submit(formData, { method: "post" });
-  };
-
-  // actionの結果が返ってきたらisSubmittingをfalseに戻す
-  useEffect(() => {
-    if (actionData) {
-      setIsSubmitting(false);
-
-      // スクレイピングが成功した場合
-      if (actionData.ok && actionData.data) {
-        // スクレイピング結果をJotaiのatomに保存
-        const scrapedData = actionData.data.scraped_data || [];
-        const editableResults: EditableScrapingResultItem[] = Array.isArray(scrapedData)
-          ? scrapedData.map((item: any) => ({
-            id: uuidv4(),
-            url: item.current_url || "",
-            title: item.title || "",
-            content: item.description || "",
-            index_status: item.index_status || "unknown",
-            internal_links: item.internal_links?.map((link: string) => ({ url: link } as InternalLinkItem)) || [],
-            headings: processHeadings(item.headings || []),
-            isEditing: false
-          }))
-          : []; // データが配列でない場合は空配列を設定
-
-        // 結果をatomに保存
-        setScrapingResults(editableResults);
-
-        // 結果表示画面に遷移
-        navigate("/scraping-results");
-      }
-    }
-  }, [actionData, navigate, setScrapingResults]);
-
-  // スクレイピング結果の有無を確認
-  const [results] = useAtom(scrapingResultsAtom);
-  const hasResults = results.length > 0;
+  // アクティブなタブの状態管理（デフォルトはフォーム）
+  const defaultTab = hasResults && crawlStatus === 'completed' ? 'results' : 'form';
 
   return (
-    <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* ヘッダー */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-blue-500">
-              サイト分析ツール
-            </span>
-          </h1>
-          <p className="text-muted-foreground">
-            URLとクラス名を入力して、ウェブサイトの構造を分析します
-          </p>
+    <div className="bg-gradient-to-b from-background to-muted/20 min-h-screen py-12 px-4 sm:px-6 lg:px-8 overflow-x-hidden">
+
+      <div className="max-w-6xl mx-auto overflow-hidden"> {/* コンテナ幅を拡大し、オーバーフロー制御を追加 */}
+        {/* ページヘッダー */}
+        <PageHeader
+          hasResults={hasResults}
+          crawlStatus={crawlStatus}
+          onViewResults={() => navigate("/scraping/result")}
+        />
+
+        {/* スクレイピング状態表示 - スティッキーヘッダーとして表示 */}
+        <div className="sticky top-4 z-10 mb-8">
+          <ScrapingStatus
+            crawlStatus={crawlStatus}
+            progressInfo={progressInfo}
+            errorMessage={errorMessage}
+          />
         </div>
 
-        {/* エラー表示 */}
-        {actionData?.error && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>エラーが発生しました</AlertTitle>
-            <AlertDescription>
-              {actionData.error}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* 既存結果へのリンク */}
-        {hasResults && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">既存の分析結果</CardTitle>
-              <CardDescription>前回のスクレイピング結果を確認できます</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => navigate("/scraping-results")}
-                variant="outline"
-                className="w-full"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                スクレイピング結果を表示
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 入力フォーム */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>スクレイピング設定</CardTitle>
-            <CardDescription>分析対象のURLとクラス名を入力してください</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="startUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>スクレイピングURL</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              placeholder="https://example.com"
-                              {...field}
-                            />
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="absolute right-0 top-0"
-                                  >
-                                    <Info className="h-4 w-4 text-muted-foreground" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>スクレイピングを開始するURLを入力してください</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          スクレイピングを開始するURLを入力してください
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="targetClass"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>対象クラス名</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              placeholder="content-class"
-                              {...field}
-                            />
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button 
-                                    type="button" 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="absolute right-0 top-0"
-                                  >
-                                    <Info className="h-4 w-4 text-muted-foreground" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>スクレイピング対象のHTML要素のクラス名を入力してください</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          スクレイピング対象のHTML要素のクラス名を入力してください
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      処理中...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      サイト分析を開始する
-                    </>
+        {/* メインコンテンツエリア */}
+        <div className="mt-8">
+          {/* タブインターフェース */}
+          <Tabs defaultValue={defaultTab} className="w-full">
+            <div className="flex justify-between items-center mb-6">
+              <TabsList className="grid grid-cols-2 w-64">
+                <TabsTrigger value="form" className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900 dark:data-[state=active]:bg-emerald-900/20 dark:data-[state=active]:text-emerald-100">
+                  フォーム
+                </TabsTrigger>
+                <TabsTrigger value="results" className="data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 dark:data-[state=active]:bg-blue-900/20 dark:data-[state=active]:text-blue-100" disabled={!hasResults}>
+                  結果
+                  {hasResults && (
+                    <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-100">
+                      {scrapedArticles.length}
+                    </Badge>
                   )}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+                </TabsTrigger>
+              </TabsList>
+
+              {/* ジョブID表示 */}
+              {jobId && (
+                <div className="text-xs text-muted-foreground">
+                  ジョブID: <span className="font-mono">{jobId}</span>
+                </div>
+              )}
+            </div>
+
+            {/* フォームタブコンテンツ */}
+            <TabsContent value="form" className="mt-0">
+              <Card className="shadow-lg border-t-4 border-t-emerald-500 dark:border-t-emerald-400 transition-all duration-300">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xl text-emerald-700 dark:text-emerald-300">スクレイピング設定</CardTitle>
+                  <CardDescription>
+                    分析対象のURLとコンテンツを含むHTML要素のクラス名を入力してください
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrapingForm
+                    form={form}
+                    onSubmit={startScraping}
+                    crawlStatus={crawlStatus}
+                    onCancel={() => cancelScraping(false)}
+                  />
+                </CardContent>
+                <CardFooter className="text-xs text-muted-foreground border-t pt-4">
+                  <p>※ スクレイピングはサーバーリソースを消費します。適切な間隔を空けてご利用ください。</p>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+
+            {/* 結果タブコンテンツ */}
+            <TabsContent value="results" className="mt-0">
+              {/* 追加情報セクション */}
+              {crawlStatus === 'completed' && hasResults && (
+                <div className="mt-8 bg-white dark:bg-gray-800/50 rounded-lg p-6 shadow-md">
+                  <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-gray-100">スクレイピング概要</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">総記事数</p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-300">{scrapedArticles.length}</p>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">内部リンク合計</p>
+                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-300">
+                        {scrapedArticles.reduce((sum, article) => sum + article.internalLinks.length, 0)}
+                      </p>
+                    </div>
+                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">外部リンク合計</p>
+                      <p className="text-2xl font-bold text-amber-600 dark:text-amber-300">
+                        {scrapedArticles.reduce((sum, article) => sum + article.outerLinks.length, 0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <Card className="shadow-lg border-t-4 border-t-blue-500 dark:border-t-blue-400 transition-all duration-300">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-xl text-blue-700 dark:text-blue-300">スクレイピング結果</CardTitle>
+                    {hasResults && (
+                      <Badge variant="outline" className="ml-2">
+                        {scrapedArticles.length}件
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription>
+                    取得した記事データの一覧です
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="overflow-x-hidden">
+                  <ScrapingResultsList articles={scrapedArticles} />
+                </CardContent>
+                {hasResults && (
+                  <CardFooter className="flex justify-end border-t pt-4">
+                    <button
+                      onClick={() => navigate("/scraping/result")}
+                      className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+                    >
+                      詳細分析を表示
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </CardFooter>
+                )}
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </div>
   );
