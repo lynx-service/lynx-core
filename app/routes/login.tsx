@@ -9,7 +9,6 @@ import {
 } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { ThemeProvider } from "~/components/ui/theme-provider";
-import { ThemeToggle } from "~/components/ui/theme-toggle";
 
 export default function Login() {
   return (
