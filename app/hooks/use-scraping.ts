@@ -33,11 +33,6 @@ export function useScraping(token?: string): UseScrapingReturn {
     }
   }, [setGlobalScrapingResults]);
 
-  // コンポーネントがアンマウントされる際にクリーンアップ
-  useEffect(() => {
-    return resetState;
-  }, [resetState]);
-
   // ストリーム処理関数
   const processStream = useCallback(async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
     const decoder = new TextDecoder();
@@ -55,9 +50,13 @@ export function useScraping(token?: string): UseScrapingReturn {
               // 最後のデータ処理
               if (json.type === 'completion') {
                 setProgressInfo(prev => ({ ...prev, message: json.message, processedPages: json.processed_pages, elapsedTime: json.total_time }));
-                setCrawlStatus('completed');
+                // Jotai stateを直接更新
                 setGlobalScrapingResults(currentArticles);
+                console.log('Jotai state updated directly on completion (final chunk):', currentArticles);
+                setScrapedArticles(currentArticles); // ローカルstateも更新
+                setCrawlStatus('completed');
               } else if (!json.type && typeof json === 'object' && json !== null && 'articleUrl' in json) {
+                // 最後の記事データを追加
                 currentArticles = [...currentArticles, json];
                 setScrapedArticles(currentArticles);
               } else if (json.error) {
@@ -71,8 +70,11 @@ export function useScraping(token?: string): UseScrapingReturn {
             }
           } else if (crawlStatus !== 'completed' && crawlStatus !== 'error') {
              console.warn("Stream ended unexpectedly without completion/error message.");
-             setCrawlStatus('completed');
+             // 予期せぬ終了時もJotai stateを更新
              setGlobalScrapingResults(currentArticles);
+             console.log('Jotai state updated directly on unexpected stream end:', currentArticles);
+             setScrapedArticles(currentArticles); // ローカルstateも更新
+             setCrawlStatus('completed');
           }
           break;
         }
@@ -93,8 +95,11 @@ export function useScraping(token?: string): UseScrapingReturn {
               setProgressInfo({ message: json.message, processedPages: json.processed_pages, elapsedTime: json.elapsed_time });
             } else if (json.type === 'completion') {
               setProgressInfo(prev => ({ ...prev, message: json.message, processedPages: json.processed_pages, elapsedTime: json.total_time }));
-              setCrawlStatus('completed');
+              // Jotai stateを直接更新
               setGlobalScrapingResults(currentArticles);
+              console.log('Jotai state updated directly on completion message:', currentArticles);
+              setScrapedArticles(currentArticles); // ローカルstateも更新
+              setCrawlStatus('completed');
               break;
             } else if (json.error) {
               setErrorMessage(`スクレイピングエラー: ${json.error}`);
@@ -119,16 +124,8 @@ export function useScraping(token?: string): UseScrapingReturn {
       console.error("Error reading stream:", error);
       setErrorMessage(error instanceof Error ? error.message : "ストリームの読み取り中にエラーが発生しました");
       setCrawlStatus('error');
-    } finally {
-      reader.releaseLock();
-      if (crawlStatus !== 'completed' && crawlStatus !== 'error') {
-        setCrawlStatus('error');
-        if (!errorMessage) {
-          setErrorMessage("スクレイピング処理が予期せず終了しました。");
-        }
-      }
     }
-  }, [setGlobalScrapingResults, crawlStatus, errorMessage]);
+  }, [setGlobalScrapingResults, crawlStatus]); // errorMessageを依存配列から削除 (ループ防止の可能性)
 
   // 中断処理関数
   const cancelScraping = useCallback(async (isNavigating = false) => {
