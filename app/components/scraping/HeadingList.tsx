@@ -5,6 +5,7 @@ interface Props {
 }
 
 export function HeadingList({ headings }: Props) {
+  console.log(headings);
   return (
     <ul className="space-y-1 pl-4 border-l-2 border-gray-300 dark:border-gray-600">
       {headings.map((heading, index) => (
