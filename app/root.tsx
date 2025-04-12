@@ -16,6 +16,7 @@ import { Sidebar } from "~/components/layout/Sidebar"; // Sidebarをインポー
 import { MobileSidebar } from "~/components/layout/MobileSidebar"; // MobileSidebarをインポート
 import { useTheme } from "~/hooks/use-theme"; // useThemeフックをインポート
 import { cn } from "~/lib/utils"; // cnユーティリティをインポート
+// import { Provider } from "jotai"; // JotaiのProviderインポートを削除
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -105,6 +106,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  // Outletを直接返すように戻す
   return <Outlet />;
 }
 
