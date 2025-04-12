@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { ArticleItem } from '~/types/article';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import {
@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "~/components/ui/table";
 import { cn } from '~/lib/utils';
+import { ExternalLink, AlertTriangle, Check } from 'lucide-react';
 
 interface InternalLinkMatrixProps {
   articles: ArticleItem[];
@@ -22,16 +23,43 @@ interface InternalLinkMatrixProps {
  */
 export default function InternalLinkMatrix({ articles, onCellClick }: InternalLinkMatrixProps): React.ReactNode {
   // 記事IDをキーとした記事データのマップを作成（検索効率化のため）
-  const articleMap = new Map(articles.map(article => [article.id, article]));
+  const articleMap = useMemo(() => new Map(articles.map(article => [article.id, article])), [articles]);
+  
+  // 孤立記事（発リンクも被リンクもない）のIDセットを作成
+  const isolatedArticleIds = useMemo(() => {
+    return new Set(
+      articles
+        .filter(article => 
+          (article.internalLinks?.length || 0) === 0 && 
+          (article.linkedFrom?.length || 0) === 0
+        )
+        .map(article => article.id)
+    );
+  }, [articles]);
   
   /**
    * リンクの有無に基づく色の設定
    * SEO観点での内部リンク可視化のため、リンクの有無を色で表現
    */
-  const getLinkColor = (hasLink: boolean, isDark: boolean) => {
-    if (!hasLink) return isDark ? 'bg-gray-800' : 'bg-gray-50';
-    // リンクがある場合は緑色
-    return isDark ? 'bg-emerald-700' : 'bg-emerald-200';
+  const getCellStyle = (hasLink: boolean, isSelfLink: boolean, isIsolatedArticle: boolean) => {
+    // 自分自身へのリンクの場合
+    if (isSelfLink) {
+      return "bg-gray-200 dark:bg-gray-700 cursor-not-allowed";
+    }
+    
+    // 孤立記事の場合は特別なスタイルを適用
+    if (isIsolatedArticle) {
+      return hasLink 
+        ? "bg-emerald-100 dark:bg-emerald-900 border-red-300 dark:border-red-800" 
+        : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-800";
+    }
+    
+    // 通常のリンク有無による色分け
+    if (hasLink) {
+      return "bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 cursor-pointer";
+    } else {
+      return "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer";
+    }
   };
 
   return (
@@ -147,16 +175,23 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
                       <TooltipTrigger asChild>
                         <TableCell
                           className={cn(
-                            "border border-l text-center p-0 h-12 w-12 cursor-pointer transition-colors duration-150",
-                            isSelfLink ? "bg-gray-200 dark:bg-gray-700 cursor-not-allowed" : "",
-                            !isSelfLink && hasLink ? `${getLinkColor(hasLink, false)} dark:${getLinkColor(hasLink, true)}` : "",
-                            !isSelfLink && !hasLink ? "bg-gray-50 dark:bg-gray-800" : ""
+                            "border border-l text-center p-0 h-12 w-12 transition-colors duration-150",
+                            getCellStyle(
+                              hasLink, 
+                              isSelfLink, 
+                              isolatedArticleIds.has(rowArticle.id) || isolatedArticleIds.has(colArticle.id)
+                            )
                           )}
                           onClick={() => !isSelfLink && onCellClick(colArticle)}
                         >
-                          {/* リンクの有無を表示（チェックマーク） */}
+                          {/* リンクの有無を表示（アイコン） */}
                           {hasLink && !isSelfLink && (
-                            <span className="font-medium">✓</span>
+                            <Check className="h-4 w-4 mx-auto text-emerald-600 dark:text-emerald-400" />
+                          )}
+                          
+                          {/* 孤立記事の場合は警告アイコンを表示 */}
+                          {!hasLink && !isSelfLink && isolatedArticleIds.has(rowArticle.id) && isolatedArticleIds.has(colArticle.id) && (
+                            <AlertTriangle className="h-4 w-4 mx-auto text-red-500 dark:text-red-400 opacity-50" />
                           )}
                         </TableCell>
                       </TooltipTrigger>
