@@ -1,7 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // 環境変数からAPIキーを取得
-const apiKey = process.env.GEMINI_API_KEY;
+// サーバーサイドでは直接process.env.GEMINI_API_KEYを使用する
+// Viteの設定ではなく、実際の環境変数を使用する
+const apiKey = process.env.GEMINI_API_KEY || import.meta.env.GEMINI_API_KEY;
 
 /**
  * 記事の内部リンク構造を分析し、SEO改善提案を生成する
@@ -14,7 +16,8 @@ export async function analyzeSeoWithGemini(articleData: any) {
 
     // Geminiモデルの初期化
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // APIバージョンがv1betaではなくv1geminiになっている可能性があるため、モデル名を修正
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
     // プロンプトの構築
     const prompt = constructSeoAnalysisPrompt(articleData);

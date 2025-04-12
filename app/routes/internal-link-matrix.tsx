@@ -118,7 +118,7 @@ export const action = async ({ request }: Route.ActionArgs) => {
   
   try {
     // 特定の記事データを取得
-    const response = await fetch(`http://localhost:3000/scraping/articles/${articleId}`, {
+    const response = await fetch(`http://localhost:3000/scraping/${articleId}`, { // <- 'articles/' を削除
       headers: {
         "Authorization": `Bearer ${token}`
       }
