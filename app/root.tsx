@@ -7,11 +7,16 @@ import {
   ScrollRestoration,
   useMatches,
 } from "react-router";
+import { useState } from "react"; // useEffectはuseThemeフック内で使うので削除
 import type { Route } from "./+types/root";
 import stylesheet from "./app.css?url";
-import { ThemeProvider } from "~/components/ui/theme-provider";
-import { Header } from "~/components/layout/header";
-import { SidebarNav } from "~/components/layout/sidebar-nav";
+import { Toaster } from "~/components/ui/toaster";
+import { Header } from "~/components/layout/Header"; // Headerをインポート
+import { Sidebar } from "~/components/layout/Sidebar"; // Sidebarをインポート
+import { MobileSidebar } from "~/components/layout/MobileSidebar"; // MobileSidebarをインポート
+import { useTheme } from "~/hooks/use-theme"; // useThemeフックをインポート
+import { cn } from "~/lib/utils"; // cnユーティリティをインポート
+// import { Provider } from "jotai"; // JotaiのProviderインポートを削除
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -30,47 +35,78 @@ export const links: Route.LinksFunction = () => [
 export function Layout({ children }: { children: React.ReactNode }) {
   const matches = useMatches();
   const isLoginPage = matches.some((match) => match.id === "routes/login");
-  
-  // ユーザー情報（実際のアプリケーションではセッションから取得）
-  const user = {
-    name: "ユーザー",
-    email: "user@example.com"
+  const { theme, toggleTheme } = useTheme(); // useThemeフックを使用
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // モバイルサイドバーの開閉状態
+
+  // モバイルサイドバーを開く関数
+  const handleOpenMobileSidebar = () => {
+    setIsMobileSidebarOpen(true);
+  };
+
+  // モバイルサイドバーを閉じる関数
+  const handleCloseMobileSidebar = () => {
+    setIsMobileSidebarOpen(false);
   };
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="theme">
-      <html lang="ja">
-        <head>
-          <meta charSet="utf-8" />
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1"
-          />
-          <Meta />
-          <Links />
-        </head>
-        <body className="bg-background flex min-h-screen flex-col">
+    // html要素のクラスはuseThemeフック内で管理される
+    <html lang="ja" className={theme}>
+      <head>
+        <meta charSet="utf-8" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1"
+        />
+        <Meta />
+        <Links />
+      </head>
+      {/* bodyのクラスを調整 */}
+      <body className={cn(
+        "min-h-screen bg-background font-sans antialiased flex flex-col",
+        // theme // themeクラスはhtml要素に適用されるため不要
+      )}>
+        {/* Headerコンポーネントを使用 */}
+        <Header
+          theme={theme}
+          toggleTheme={toggleTheme}
+          onOpenMobileSidebar={handleOpenMobileSidebar}
+        />
+
+        {/* pt-16はヘッダーの高さ分 */}
+        <div className="flex flex-grow pt-16">
+          {/* デスクトップ用サイドバー (ログインページ以外で表示) */}
+          {!isLoginPage && <Sidebar />}
+
+          {/* モバイル用サイドバー (ログインページ以外で表示) */}
           {!isLoginPage && (
-            <>
-              <Header user={user} />
-              <SidebarNav />
-            </>
+            <MobileSidebar
+              isOpen={isMobileSidebarOpen}
+              onClose={handleCloseMobileSidebar}
+            />
           )}
 
           {/* Main Content */}
-          <main className={`flex-grow ${!isLoginPage ? "md:ml-64" : ""} p-6 pt-20`}>
+          {/* サイドバーの有無に応じてマージンを調整 (md以上でサイドバー表示時) */}
+          <main className={cn(
+            "flex-grow p-6 text-muted-foreground",
+            !isLoginPage && "md:ml-64" // デスクトップサイドバーの幅(w-64)分マージンを追加
+          )}>
             {children}
           </main>
+        </div>
 
-          <ScrollRestoration />
-          <Scripts />
-        </body>
-      </html>
-    </ThemeProvider>
+        <ScrollRestoration />
+        <Scripts />
+
+        {/* Toasterコンポーネントを追加 */}
+        <Toaster />
+      </body>
+    </html>
   );
 }
 
 export default function App() {
+  // Outletを直接返すように戻す
   return <Outlet />;
 }
 

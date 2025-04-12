@@ -8,108 +8,117 @@ import {
   DialogClose,
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
-import { Pencil, Trash2, X } from "lucide-react";
-import type { EditableScrapingResultItem, HeadingItem } from "~/atoms/scrapingResults";
-import { ScrapingResultModalContent } from "./ScrapingResultModalContent";
+import { X, ExternalLink, Copy, Check } from "lucide-react";
+import type { ArticleItem } from "~/types/article";
+import { ScrapingResultDisplay } from "./ScrapingResultDisplay";
+import { Badge } from "~/components/ui/badge";
+import { useState } from "react";
 
 interface Props {
-  item: EditableScrapingResultItem;
+  item: ArticleItem;
   isOpen: boolean;
   setOpen: (open: boolean) => void;
-  isEditing: boolean;
-  startEditing: () => void;
-  cancelEditing: () => void;
-  updateEditingItem: (field: keyof EditableScrapingResultItem, value: any) => void;
-  updateInternalLink: (index: number, value: string) => void;
-  addInternalLink: () => void;
-  removeInternalLink: (index: number) => void;
-  handleHeadingUpdate: (path: number[], field: keyof HeadingItem, value: string) => void;
-  deleteItem: (id: string) => void;
-  onUpdateBasicInfo?: (item: EditableScrapingResultItem) => Promise<void>;
-  onUpdateInternalLinks?: (item: EditableScrapingResultItem) => Promise<void>;
-  onDeleteInternalLink?: (linkId: number) => Promise<void>;
-  onUpdateHeadings?: (item: EditableScrapingResultItem) => Promise<void>;
-  readOnly?: boolean; // 閲覧専用モードを追加
 }
 
 export function ScrapingResultModal({
   item,
   isOpen,
   setOpen,
-  isEditing,
-  startEditing,
-  cancelEditing,
-  updateEditingItem,
-  updateInternalLink,
-  addInternalLink,
-  removeInternalLink,
-  handleHeadingUpdate,
-  deleteItem,
-  onUpdateBasicInfo,
-  onUpdateInternalLinks,
-  onDeleteInternalLink,
-  onUpdateHeadings,
-  readOnly = false, // デフォルトは編集可能
 }: Props) {
+  const [copied, setCopied] = useState(false);
+
+  // URLをクリップボードにコピーする関数
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(item.articleUrl || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex justify-between items-center">
-            <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEditing ? "データの編集" : (item.title || "タイトルなし")}
-            </DialogTitle>
-
-            {!isEditing && !readOnly && (
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-background rounded-xl">
+        {/* スティッキーヘッダー */}
+        <div className="sticky top-0 z-10 bg-background border-b border-gray-200 dark:border-gray-700 rounded-t-xl shadow-sm">
+          <DialogHeader className="p-6 pb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge 
+                    variant={item.isIndexable ? "default" : "destructive"}
+                    className={item.isIndexable
+                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                      : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                    }
+                  >
+                    {item.isIndexable ? "インデックス" : "ノーインデックス"}
+                  </Badge>
+                  
+                  {item.jsonLd && item.jsonLd.length > 0 && (
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                      構造化データあり
+                    </Badge>
+                  )}
+                </div>
+                
+                <DialogTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {item.metaTitle || "タイトルなし"}
+                </DialogTitle>
+              </div>
+              
+              <DialogClose asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-8 w-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">閉じる</span>
+                </Button>
+              </DialogClose>
+            </div>
+            
+            <DialogDescription className="mt-2 flex items-center gap-2">
+              <div className="flex-1 overflow-hidden">
+                <a
+                  href={item.articleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline break-all overflow-wrap-anywhere flex items-center gap-1"
+                >
+                  <span className="truncate">{item.articleUrl}</span>
+                  <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                </a>
+              </div>
+              
               <Button
-                onClick={() => deleteItem(item.id)}
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                className="text-red-600 dark:text-red-400 border-red-600 dark:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                className="flex-shrink-0 h-8 px-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                onClick={copyToClipboard}
               >
-                <Trash2 className="h-4 w-4 mr-1" />
-                削除
+                {copied ? (
+                  <Check className="h-4 w-4 mr-1 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-1" />
+                )}
+                {copied ? "コピー済み" : "URLをコピー"}
               </Button>
-            )}
-          </div>
-
-          {!isEditing && (
-            <DialogDescription className="text-gray-500 dark:text-gray-400">
-              <a
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                {item.url}
-              </a>
             </DialogDescription>
-          )}
-        </DialogHeader>
+          </DialogHeader>
+        </div>
 
-        <ScrapingResultModalContent
-          key={item.id}
-          item={item}
-          isEditing={isEditing}
-          startEditing={startEditing}
-          updateEditingItem={updateEditingItem}
-          updateInternalLink={updateInternalLink}
-          addInternalLink={addInternalLink}
-          removeInternalLink={removeInternalLink}
-          handleHeadingUpdate={handleHeadingUpdate}
-          onCancel={cancelEditing}
-          onUpdateBasicInfo={onUpdateBasicInfo}
-          onUpdateInternalLinks={onUpdateInternalLinks}
-          onDeleteInternalLink={onDeleteInternalLink}
-          onUpdateHeadings={onUpdateHeadings}
-          readOnly={readOnly}
-        />
+        {/* コンテンツ部分 */}
+        <div className="p-6 pt-4">
+          <ScrapingResultDisplay item={item} />
+        </div>
 
-        <DialogFooter>
+        {/* フッター */}
+        <DialogFooter className="p-6 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+          
           <DialogClose asChild>
             <Button
               variant="outline"
-              className="text-gray-600 dark:text-gray-400 border-gray-600 dark:border-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900/30"
+              className="text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
             >
               <X className="h-4 w-4 mr-1" />
               閉じる
