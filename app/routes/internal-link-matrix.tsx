@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { getSession } from "~/utils/session.server"; // sessionユーティリティをインポート
 import { requireAuth } from "~/utils/auth.server"; // 認証ユーティリティをインポート
+import { analyzeSeoWithGemini } from "~/utils/gemini.server"; // Gemini API連携
 import type { ArticleItem } from "~/types/article";
 import InternalLinkMatrix from '~/components/matrix/InternalLinkMatrix'; // 作成したコンポーネントをインポート
 import ArticleDetailSidebar from '~/components/matrix/ArticleDetailSidebar'; // 作成したコンポーネントをインポート
@@ -11,6 +12,7 @@ import MatrixSearchFilter from '~/components/matrix/MatrixSearchFilter'; // 新�
 import MatrixStats from '~/components/matrix/MatrixStats'; // 新しいコンポーネントをインポート
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
+import type { OverallSeoAnalysis } from "~/hooks/use-article-analysis";
 
 // meta関数
 export function meta({ }: Route.MetaArgs) {
@@ -42,17 +44,117 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     }
 
     const articles = await response.json();
-    return { articles, user, error: null }; // エラーがない場合はnullを返す
+    
+    // 全体的なSEO分析を実行
+    const isolatedCount = articles.filter((a: ArticleItem) => 
+      (a.internalLinks?.length || 0) === 0 && 
+      (a.linkedFrom?.length || 0) === 0
+    ).length;
+    
+    const noOutgoingCount = articles.filter((a: ArticleItem) => 
+      (a.internalLinks?.length || 0) === 0
+    ).length;
+    
+    const noIncomingCount = articles.filter((a: ArticleItem) => 
+      (a.linkedFrom?.length || 0) === 0
+    ).length;
+    
+    const totalLinks = articles.reduce((sum: number, a: ArticleItem) => 
+      sum + (a.internalLinks?.length || 0), 0
+    );
+    
+    const averageLinkDensity = articles.length > 0 
+      ? totalLinks / articles.length
+      : 0;
+    
+    // Gemini APIを使用して全体的なSEO分析を実行
+    const overallAnalysis = await analyzeSeoWithGemini({
+      isOverallAnalysis: true,
+      articleCount: articles.length,
+      isolatedCount,
+      noOutgoingCount,
+      noIncomingCount,
+      averageLinkDensity,
+    });
+    
+    return { 
+      articles, 
+      user, 
+      error: null,
+      seoAnalysis: overallAnalysis
+    };
   } catch (error) {
     console.error("API fetch error:", error);
     // エラー発生時は空の配列とエラーメッセージを返す
-    return { articles: [], user, error: error instanceof Error ? error.message : "データの取得に失敗しました" };
+    return { 
+      articles: [], 
+      user, 
+      error: error instanceof Error ? error.message : "データの取得に失敗しました",
+      seoAnalysis: null
+    };
+  }
+};
+
+// action関数 - 個別記事のSEO分析
+export const action = async ({ request }: Route.ActionArgs) => {
+  // ログインチェック
+  await requireAuth(request);
+  
+  const formData = await request.formData();
+  const articleId = formData.get('articleId') as string;
+  
+  if (!articleId) {
+    return { 
+      success: false, 
+      analysis: { 
+        error: true, 
+        message: "記事IDが指定されていません" 
+      }
+    };
+  }
+  
+  const session = await getSession(request.headers.get("Cookie"));
+  const token = session.get("token");
+  
+  try {
+    // 特定の記事データを取得
+    const response = await fetch(`http://localhost:3000/scraping/articles/${articleId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const articleData = await response.json();
+    
+    // 記事個別のSEO分析を実行
+    const articleAnalysis = await analyzeSeoWithGemini({
+      ...articleData,
+      isOverallAnalysis: false
+    });
+    
+    return { 
+      success: true, 
+      analysis: articleAnalysis 
+    };
+  } catch (error) {
+    console.error("Article analysis error:", error);
+    return { 
+      success: false, 
+      analysis: { 
+        error: true, 
+        message: error instanceof Error ? error.message : "分析に失敗しました" 
+      }
+    };
   }
 };
 
 // デフォルトエクスポート
 export default function InternalLinkMatrixRoute() {
-  const { articles, error } = useLoaderData<typeof loader>(); // userはここでは使わないので省略
+  const { articles, error, seoAnalysis } = useLoaderData<typeof loader>(); // userはここでは使わないので省略
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast(); // エラー表示用
@@ -126,8 +228,10 @@ export default function InternalLinkMatrixRoute() {
 
       {/* 統計情報表示 */}
       {articles && articles.length > 0 && (
-        <div className="container max-w-7xl">
-          <MatrixStats articles={articles} />
+        <div className="container w-full overflow-x-auto">
+          <div className="min-w-[640px] max-w-7xl">
+            <MatrixStats articles={articles} seoAnalysis={seoAnalysis} />
+          </div>
         </div>
       )}
 

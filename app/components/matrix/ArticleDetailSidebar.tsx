@@ -3,7 +3,8 @@ import type { ArticleItem, InternalLinkItem } from '~/types/article';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { X } from "lucide-react"; // Xアイコンをインポート
+import { X, Sparkles, Loader2, ThumbsUp, ThumbsDown, AlertCircle, ArrowRight, Lightbulb, CheckCircle } from "lucide-react"; // アイコンをインポート
+import { useArticleAnalysis } from '~/hooks/use-article-analysis';
 
 /**
  * 内部リンクのバランス状態を評価し、適切な色を返す
@@ -141,6 +142,9 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
   if (!article) {
     return null; // 記事が選択されていない場合は何も表示しない
   }
+
+  // 記事のSEO分析を行う
+  const { analysis, isLoading, error } = useArticleAnalysis(isOpen && article.id ? String(article.id) : null);
 
   return (
   <div 
@@ -312,6 +316,104 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
         {/* SEO分析タブ */}
         <TabsContent value="seo" className="flex-grow overflow-y-auto px-6">
           <div className="space-y-4">
+            {/* AI分析結果 */}
+            <div>
+              <h3 className="font-semibold mb-2 flex items-center">
+                <Sparkles className="h-4 w-4 mr-2 text-primary" />
+                AI SEO分析
+              </h3>
+              
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-8 bg-muted rounded-md">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">AI分析を実行中...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-sm text-red-500">
+                    <AlertCircle className="h-4 w-4 inline mr-1" />
+                    分析中にエラーが発生しました: {error}
+                  </p>
+                </div>
+              ) : analysis ? (
+                <div className="space-y-4">
+                  <div className="flex items-center bg-muted p-3 rounded-md">
+                    <div className="w-16 h-16 flex items-center justify-center">
+                      <div className="relative w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xl font-bold">{analysis.overallScore}</span>
+                        <span className="text-xs absolute bottom-0 right-0">/10</span>
+                      </div>
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <p className="font-medium">SEOスコア</p>
+                      <p className="text-sm text-muted-foreground">{analysis.summary}</p>
+                    </div>
+                  </div>
+                  
+                  {/* 強み */}
+                  {analysis.strengths && analysis.strengths.length > 0 && (
+                    <div className="bg-muted p-3 rounded-md">
+                      <h4 className="text-sm font-medium flex items-center mb-2">
+                        <ThumbsUp className="h-3 w-3 mr-1 text-green-500" />
+                        強み
+                      </h4>
+                      <ul className="space-y-1">
+                        {analysis.strengths.map((strength, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start">
+                            <CheckCircle className="h-3 w-3 mr-2 text-green-500 mt-1 flex-shrink-0" />
+                            <span>{strength}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* 弱み */}
+                  {analysis.weaknesses && analysis.weaknesses.length > 0 && (
+                    <div className="bg-muted p-3 rounded-md">
+                      <h4 className="text-sm font-medium flex items-center mb-2">
+                        <ThumbsDown className="h-3 w-3 mr-1 text-amber-500" />
+                        改善点
+                      </h4>
+                      <ul className="space-y-1">
+                        {analysis.weaknesses.map((weakness, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start">
+                            <AlertCircle className="h-3 w-3 mr-2 text-amber-500 mt-1 flex-shrink-0" />
+                            <span>{weakness}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* 推奨事項 */}
+                  {analysis.recommendations && analysis.recommendations.length > 0 && (
+                    <div className="bg-muted p-3 rounded-md">
+                      <h4 className="text-sm font-medium flex items-center mb-2">
+                        <Lightbulb className="h-3 w-3 mr-1 text-blue-500" />
+                        推奨アクション
+                      </h4>
+                      <ul className="space-y-1">
+                        {analysis.recommendations.map((rec, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start">
+                            <ArrowRight className="h-3 w-3 mr-2 text-blue-500 mt-1 flex-shrink-0" />
+                            <span>{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-sm text-muted-foreground">
+                    AI分析はまだ実行されていません。
+                  </p>
+                </div>
+              )}
+            </div>
+            
+            {/* 基本的な内部リンク分析 */}
             <div>
               <h3 className="font-semibold mb-2">内部リンク分析</h3>
               <div className="bg-muted p-3 rounded-md">

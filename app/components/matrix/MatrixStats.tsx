@@ -1,18 +1,20 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
 import { Badge } from '~/components/ui/badge';
-import { BarChart, PieChart, Link2, AlertTriangle } from 'lucide-react';
+import { BarChart, PieChart, Link2, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import type { ArticleItem } from '~/types/article';
+import type { OverallSeoAnalysis } from '~/hooks/use-article-analysis';
 
 interface MatrixStatsProps {
   articles: ArticleItem[];
+  seoAnalysis?: OverallSeoAnalysis | null;
 }
 
 /**
  * 内部リンクの統計情報を表示するコンポーネント
  * SEO観点での内部リンク状態の概要を提供
  */
-export default function MatrixStats({ articles }: MatrixStatsProps) {
+export default function MatrixStats({ articles, seoAnalysis }: MatrixStatsProps) {
   // 孤立記事（発リンクも被リンクもない）の数
   const isolatedCount = articles.filter(article => 
     (article.internalLinks?.length || 0) === 0 && 
@@ -49,7 +51,45 @@ export default function MatrixStats({ articles }: MatrixStatsProps) {
     : 0;
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 w-full overflow-x-auto pb-2">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-6 pb-2">
+      {/* AI SEO分析 */}
+      <Card className="border-primary/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center">
+            <Sparkles className="h-4 w-4 mr-2 text-primary" />
+            AI SEO分析
+          </CardTitle>
+          <CardDescription>Gemini AIによる分析</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {seoAnalysis ? (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <p className="text-sm">総合評価</p>
+                <div className="flex items-center">
+                  <span className="text-xl font-bold mr-1">{seoAnalysis.overallScore}</span>
+                  <span className="text-xs text-muted-foreground">/10</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">{seoAnalysis.summary}</p>
+              {seoAnalysis.recommendations && seoAnalysis.recommendations.length > 0 && (
+                <div className="pt-2">
+                  <p className="text-xs font-medium mb-1">おすすめの改善点:</p>
+                  <ul className="text-xs list-disc list-inside space-y-1">
+                    {seoAnalysis.recommendations.slice(0, 2).map((rec, idx) => (
+                      <li key={idx} className="text-muted-foreground">{rec}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-20">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
       {/* 総記事数と内部リンク密度 */}
       <Card>
         <CardHeader className="pb-2">
