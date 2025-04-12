@@ -8,77 +8,6 @@ import type { ArticleItem, InternalLinkItem } from "~/types/article";
 import InternalLinkMatrix from '~/components/matrix/InternalLinkMatrix'; // 作成したコンポーネントをインポート
 import ArticleDetailSidebar from '~/components/matrix/ArticleDetailSidebar'; // 作成したコンポーネントをインポート
 
-// ダミーデータ生成関数 (content.tsxのAPI呼び出し部分を参考に修正)
-const generateDummyArticles = (count: number): ArticleItem[] => {
-  const articles: ArticleItem[] = [];
-  for (let i = 1; i <= count; i++) {
-    articles.push({
-      id: i, // IDをnumber型に変更
-      projectId: 1,
-      articleUrl: `https://example.com/article-${i}`,
-      metaTitle: `ダミー記事 ${i}`,
-      metaDescription: `これはダミー記事 ${i} の説明です。`,
-      isIndexable: true,
-      internalLinks: [], // 初期化
-      outerLinks: [],
-      linkedFrom: [], // 初期化
-      headings: [
-        { tag: 'h1', text: `ダミー記事 ${i} H1`, children: [] },
-        { tag: 'h2', text: `ダミー記事 ${i} H2-1`, children: [] },
-        { tag: 'h2', text: `ダミー記事 ${i} H2-2`, children: [] },
-      ],
-      keywords: [],
-      jsonLd: [],
-    });
-  }
-
-  // ダミーのリンク関係を追加
-  const addLink = (fromIndex: number, toIndex: number) => {
-    // インデックスが範囲内かチェック
-    if (fromIndex >= 0 && fromIndex < count && toIndex >= 0 && toIndex < count) {
-      const fromArticle = articles[fromIndex];
-      const toArticle = articles[toIndex];
-      // IDがnumberであることを確認
-      if (typeof fromArticle.id !== 'number' || typeof toArticle.id !== 'number') {
-        console.error("Dummy article ID is not a number");
-        return;
-      }
-      const linkItem: InternalLinkItem = {
-        linkUrl: toArticle.articleUrl,
-        linkedArticleId: toArticle.id, // number型
-        criteriaArticleId: fromArticle.id, // number型
-        anchorText: `Link to ${toArticle.metaTitle}`,
-        isActive: true,
-        isFollow: true,
-        status: { code: 200, redirectUrl: '' },
-      };
-      // internalLinksが未定義の場合に備えて初期化
-      if (!fromArticle.internalLinks) {
-        fromArticle.internalLinks = [];
-      }
-      fromArticle.internalLinks.push(linkItem);
-
-      // linkedFromが未定義の場合に備えて初期化
-      if (!toArticle.linkedFrom) {
-        toArticle.linkedFrom = [];
-      }
-      // linkedFromにも追加（InternalLinkItemの形式で）
-      toArticle.linkedFrom.push({ ...linkItem }); // コピーして追加
-    }
-  };
-
-  // 例: 1->2, 1->3, 4->1, 4->5, 3->6, 7->2, 7->8
-  addLink(0, 1); // 記事1 -> 記事2
-  addLink(0, 2); // 記事1 -> 記事3
-  addLink(3, 0); // 記事4 -> 記事1
-  addLink(3, 4); // 記事4 -> 記事5
-  addLink(2, 5); // 記事3 -> 記事6
-  addLink(6, 1); // 記事7 -> 記事2
-  addLink(6, 7); // 記事7 -> 記事8
-
-  return articles;
-};
-
 // meta関数 (Route.を削除)
 export function meta({ }: Route.MetaArgs) { // Route. を削除
   return [
@@ -243,25 +172,28 @@ export default function InternalLinkMatrixRoute() {
         </div>
       )}
 
-      {/* マトリクス表示エリア */}
-      <div className="border rounded-lg overflow-x-auto"> {/* paddingを削除し、コンポーネント側で管理 */}
-        {/* filteredArticlesが存在し、エラーがない場合にマトリクスを表示 */}
-        {filteredArticles && filteredArticles.length > 0 ? (
-          <InternalLinkMatrix
-            articles={filteredArticles}
-            onCellClick={handleCellClick} // ハンドラを渡す
-          />
-        ) : (
-          !error && <p className="p-4 text-center text-gray-500">表示する記事データがありません。</p> // エラーがない場合のみ表示
-        )}
-      </div>
+      {/* マトリクスとサイドバーを横並びに配置 */}
+      <div className="flex flex-col lg:flex-row gap-4 relative">
+        {/* マトリクス表示エリア */}
+        <div className={`border rounded-lg overflow-x-auto flex-grow ${isSidebarOpen ? 'lg:pr-[540px]' : ''}`}>
+          {/* filteredArticlesが存在し、エラーがない場合にマトリクスを表示 */}
+          {filteredArticles && filteredArticles.length > 0 ? (
+            <InternalLinkMatrix
+              articles={filteredArticles}
+              onCellClick={handleCellClick} // ハンドラを渡す
+            />
+          ) : (
+            !error && <p className="p-4 text-center text-gray-500">表示する記事データがありません。</p> // エラーがない場合のみ表示
+          )}
+        </div>
 
-      {/* 詳細表示サイドバー */}
-      <ArticleDetailSidebar
-        article={selectedArticle}
-        isOpen={isSidebarOpen}
-        onClose={handleSidebarClose}
-      />
+        {/* 詳細表示サイドバー */}
+        <ArticleDetailSidebar
+          article={selectedArticle}
+          isOpen={isSidebarOpen}
+          onClose={handleSidebarClose}
+        />
+      </div>
     </div>
   );
 }

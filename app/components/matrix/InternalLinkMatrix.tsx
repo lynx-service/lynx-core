@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { ArticleItem } from '~/types/article';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import {
@@ -23,10 +23,6 @@ interface InternalLinkMatrixProps {
 export default function InternalLinkMatrix({ articles, onCellClick }: InternalLinkMatrixProps): React.ReactNode {
   // 記事IDをキーとした記事データのマップを作成（検索効率化のため）
   const articleMap = new Map(articles.map(article => [article.id, article]));
-  
-  // ホバー状態の行と列を追跡
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-  const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   
   /**
    * リンクの有無に基づく色の設定
@@ -55,12 +51,7 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
               {articles.map((colArticle) => (
                 <TableHead 
                   key={`col-${colArticle.id}`} 
-                  className={cn(
-                    "border-b border-l min-w-[150px] text-center align-middle sticky top-0 z-10",
-                    hoveredCol === colArticle.id ? "bg-muted" : "bg-background"
-                  )}
-                  onMouseEnter={() => typeof colArticle.id === 'number' && setHoveredCol(colArticle.id)}
-                  onMouseLeave={() => setHoveredCol(null)}
+                  className="border-b border-l min-w-[150px] text-center align-middle sticky top-0 z-10 bg-background"
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -88,14 +79,11 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
             {articles.map((rowArticle) => (
               <TableRow 
                 key={`row-${rowArticle.id}`}
-                className={hoveredRow === rowArticle.id ? "bg-muted/50" : ""}
               >
                 {/* 行ヘッダー (リンク元記事) */}
                 <TableHead
                   scope="row"
                   className="sticky left-0 z-10 bg-background border-r font-medium w-40 min-w-[160px] align-middle"
-                  onMouseEnter={() => typeof rowArticle.id === 'number' && setHoveredRow(rowArticle.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -153,11 +141,6 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
 
                   // 自分自身へのリンクは通常表示しない（グレーアウトなど）
                   const isSelfLink = rowArticle.id === colArticle.id;
-                  
-                  // ホバー状態
-                  const isRowHovered = hoveredRow === rowArticle.id;
-                  const isColHovered = hoveredCol === colArticle.id;
-                  const isHovered = isRowHovered || isColHovered;
 
                   return (
                     <Tooltip key={`cell-${rowArticle.id}-${colArticle.id}`}>
@@ -167,9 +150,7 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
                             "border border-l text-center p-0 h-12 w-12 cursor-pointer transition-colors duration-150",
                             isSelfLink ? "bg-gray-200 dark:bg-gray-700 cursor-not-allowed" : "",
                             !isSelfLink && hasLink ? `${getLinkColor(hasLink, false)} dark:${getLinkColor(hasLink, true)}` : "",
-                            !isSelfLink && !hasLink ? "bg-gray-50 dark:bg-gray-800" : "",
-                            isHovered && !isSelfLink ? "ring-2 ring-primary ring-inset" : "",
-                            isRowHovered && isColHovered ? "ring-4 ring-primary ring-inset" : ""
+                            !isSelfLink && !hasLink ? "bg-gray-50 dark:bg-gray-800" : ""
                           )}
                           onClick={() => !isSelfLink && onCellClick(colArticle)}
                         >
