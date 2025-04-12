@@ -115,7 +115,7 @@ export default function InternalLinkMatrixRoute() {
   };
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+    <div className="flex flex-col min-h-[calc(100vh-4rem)] overflow-x-hidden">
       {/* ページヘッダー（固定表示されない） */}
       <div className="container py-6">
         <h1 className="text-2xl font-bold">内部リンク マトリクス</h1>
@@ -154,7 +154,7 @@ export default function InternalLinkMatrixRoute() {
 
       {/* マトリクス表示エリア（スクロール可能） */}
       <div className="flex-grow container py-4">
-        <div className={`border rounded-lg overflow-hidden ${isSidebarOpen ? 'lg:pr-[540px]' : ''}`}>
+        <div className={`border rounded-lg overflow-hidden max-w-full ${isSidebarOpen ? 'lg:pr-[540px]' : ''}`}>
           {filteredArticles && filteredArticles.length > 0 ? (
             <InternalLinkMatrix
               articles={filteredArticles}
