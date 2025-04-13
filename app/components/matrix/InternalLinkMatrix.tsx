@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import type { ArticleItem } from '~/types/article';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -41,26 +40,25 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
   const getCellStyle = (hasLink: boolean, isSelfLink: boolean, isIsolatedArticle: boolean) => {
     // 自分自身へのリンクの場合
     if (isSelfLink) {
-      return "bg-gray-200 dark:bg-gray-700 cursor-not-allowed";
+      return "bg-gray-200 dark:bg-gray-700";
     }
 
     // 孤立記事の場合は特別なスタイルを適用
     if (isIsolatedArticle) {
       return hasLink
-        ? "bg-emerald-100 dark:bg-emerald-900 border-red-300 dark:border-red-800"
-        : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-800";
+        ? "bg-emerald-100 dark:bg-emerald-900 border-red-300 dark:border-red-800 cursor-pointer"
+        : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-800 cursor-pointer";
     }
 
-    // 通常のリンク有無による色分け
+    // 通常のリンク有無による色分け（ホバー効果なし）
     if (hasLink) {
-      return "bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 cursor-pointer";
+      return "bg-emerald-100 dark:bg-emerald-900 cursor-pointer";
     } else {
-      return "bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 cursor-pointer";
+      return "bg-gray-50 dark:bg-gray-800 cursor-pointer";
     }
   };
 
   return (
-    <TooltipProvider>
       <div className="overflow-x-auto relative w-full" style={{ scrollbarWidth: 'thin' }}>
         <Table className="border w-max"> {/* w-max を使用して内容に合わせた幅を確保 */}
           <TableHeader>
@@ -77,24 +75,11 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
                 <TableHead
                   key={`col-${colArticle.id}`}
                   className="border-b border-l min-w-[150px] text-center align-middle sticky top-0 z-10 bg-background"
+                  title={`${colArticle.metaTitle}\n記事URL: ${colArticle.articleUrl}\n被リンク: ${colArticle.linkedFrom?.length || 0}\n発リンク: ${colArticle.internalLinks?.length || 0}`}
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap cursor-help">
-                        {colArticle.metaTitle || `記事ID: ${colArticle.id}`}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-md">
-                      <div className="space-y-1">
-                        <p className="font-semibold">{colArticle.metaTitle}</p>
-                        <p className="text-xs text-muted-foreground break-all">{colArticle.articleUrl}</p>
-                        <div className="flex justify-between text-xs pt-1">
-                          <span>被リンク: {colArticle.linkedFrom?.length || 0}</span>
-                          <span>発リンク: {colArticle.internalLinks?.length || 0}</span>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
+                  <div className="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap">
+                    {colArticle.metaTitle || `記事ID: ${colArticle.id}`}
+                  </div>
                 </TableHead>
               ))}
             </TableRow>
@@ -109,24 +94,11 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
                 <TableHead
                   scope="row"
                   className="sticky left-0 z-10 bg-background border-r font-medium w-40 min-w-[160px] align-middle"
+                  title={`${rowArticle.metaTitle}\n記事URL: ${rowArticle.articleUrl}\n被リンク: ${rowArticle.linkedFrom?.length || 0}\n発リンク: ${rowArticle.internalLinks?.length || 0}`}
                 >
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap cursor-help">
-                        {rowArticle.metaTitle || `記事ID: ${rowArticle.id}`}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-md">
-                      <div className="space-y-1">
-                        <p className="font-semibold">{rowArticle.metaTitle}</p>
-                        <p className="text-xs text-muted-foreground break-all">{rowArticle.articleUrl}</p>
-                        <div className="flex justify-between text-xs pt-1">
-                          <span>被リンク: {rowArticle.linkedFrom?.length || 0}</span>
-                          <span>発リンク: {rowArticle.internalLinks?.length || 0}</span>
-                        </div>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
+                  <div className="max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap">
+                    {rowArticle.metaTitle || `記事ID: ${rowArticle.id}`}
+                  </div>
                 </TableHead>
 
                 {/* セル (リンク有無) */}
@@ -168,63 +140,32 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
                   const isSelfLink = rowArticle.id === colArticle.id;
 
                   return (
-                    <Tooltip key={`cell-${rowArticle.id}-${colArticle.id}`}>
-                      <TooltipTrigger asChild>
-                        <TableCell
-                          className={cn(
-                            "border border-l text-center p-0 h-12 w-12 transition-colors duration-150",
-                            getCellStyle(
-                              hasLink,
-                              isSelfLink,
-                              isolatedArticleIds.has(rowArticle.id) || isolatedArticleIds.has(colArticle.id)
-                            )
-                          )}
-                          onClick={() => !isSelfLink && onCellClick(colArticle)}
-                        >
-                          {/* リンクの有無を表示（アイコン） */}
-                          {hasLink && !isSelfLink && (
-                            <Check className="h-4 w-4 mx-auto text-emerald-600 dark:text-emerald-400" />
-                          )}
+                    <TableCell
+                      key={`cell-${rowArticle.id}-${colArticle.id}`}
+                      className={cn(
+                        "border border-l text-center p-0 h-12 w-12",
+                        getCellStyle(
+                          hasLink,
+                          isSelfLink,
+                          isolatedArticleIds.has(rowArticle.id) || isolatedArticleIds.has(colArticle.id)
+                        )
+                      )}
+                      onClick={() => !isSelfLink && onCellClick(colArticle)}
+                      title={isSelfLink 
+                        ? "自分自身へのリンク" 
+                        : `${rowArticle.metaTitle || `記事ID: ${rowArticle.id}`} → ${colArticle.metaTitle || `記事ID: ${colArticle.id}`} (${hasLink ? 'リンクあり' : 'リンクなし'})`
+                      }
+                    >
+                      {/* リンクの有無を表示（アイコン） */}
+                      {hasLink && !isSelfLink && (
+                        <Check className="h-4 w-4 mx-auto text-emerald-600 dark:text-emerald-400" />
+                      )}
 
-                          {/* 孤立記事の場合は警告アイコンを表示 */}
-                          {!hasLink && !isSelfLink && isolatedArticleIds.has(rowArticle.id) && isolatedArticleIds.has(colArticle.id) && (
-                            <AlertTriangle className="h-4 w-4 mx-auto text-red-500 dark:text-red-400 opacity-50" />
-                          )}
-                        </TableCell>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        {isSelfLink ? (
-                          <p>自分自身へのリンク</p>
-                        ) : hasLink ? (
-                          <div className="space-y-1">
-                            <p><span className="font-semibold">{rowArticle.metaTitle}</span> から <span className="font-semibold">{colArticle.metaTitle}</span> へのリンクがあります</p>
-                            {links && links.length > 0 && (
-                              <ul className="text-xs list-disc list-inside">
-                                {links.slice(0, 3).map((link, idx) => (
-                                  <li key={idx} className="truncate">
-                                    <span className="font-medium">{link.anchorText || "リンクテキストなし"}</span>
-                                    <span className="text-xs text-muted-foreground ml-1">
-                                      ({link.linkUrl.replace(/^https?:\/\//, '').split('/')[0]})
-                                    </span>
-                                  </li>
-                                ))}
-                                {links.length > 3 && <li>他 {links.length - 3} 件...</li>}
-                              </ul>
-                            )}
-                            <p className="text-xs text-muted-foreground pt-1">
-                              クリックして詳細を表示
-                            </p>
-                          </div>
-                        ) : (
-                          <div>
-                            <p>リンクなし</p>
-                            <p className="text-xs text-muted-foreground pt-1">
-                              SEO観点では内部リンクの追加を検討すると良いでしょう
-                            </p>
-                          </div>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
+                      {/* 孤立記事の場合は警告アイコンを表示 */}
+                      {!hasLink && !isSelfLink && isolatedArticleIds.has(rowArticle.id) && isolatedArticleIds.has(colArticle.id) && (
+                        <AlertTriangle className="h-4 w-4 mx-auto text-red-500 dark:text-red-400 opacity-50" />
+                      )}
+                    </TableCell>
                   );
                 })}
               </TableRow>
@@ -232,6 +173,5 @@ export default function InternalLinkMatrix({ articles, onCellClick }: InternalLi
           </TableBody>
         </Table>
       </div>
-    </TooltipProvider>
   );
 }
