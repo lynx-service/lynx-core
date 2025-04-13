@@ -10,7 +10,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly authService: AuthService
   ) {
     // 環境変数からバックエンドURLを取得してコールバックURLを生成
-    const backendUrl = configService.get<string>('BACKEND_URL');
+    let backendUrl = configService.get<string>('BACKEND_URL');
+    
+    // 本番環境の場合、または環境変数が設定されていない場合は本番URLを使用
+    if (process.env.NODE_ENV === 'production' || !backendUrl) {
+      backendUrl = 'https://lynx-backend.onrender.com';
+    }
+    
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),

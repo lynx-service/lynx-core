@@ -10,9 +10,17 @@ async function bootstrap() {
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
+  // CORSの設定
+  // 環境変数からフロントエンドのURLを取得し、環境に応じてフォールバック値を設定
+  let frontendUrl = process.env.FRONTEND_URL;
+  
+  // 本番環境の場合、または環境変数が設定されていない場合は本番URLを使用
+  if (process.env.NODE_ENV === 'production' || !frontendUrl) {
+    frontendUrl = 'https://lynx-frontend.onrender.com';
+  }
+  
   app.enableCors({
-    // 環境変数からフロントエンドのURLを取得
-    origin: process.env.FRONTEND_URL,
+    origin: frontendUrl,
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe());

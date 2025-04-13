@@ -22,8 +22,15 @@ export class AuthController {
   @Redirect()
   async googleAuthRedirect(@Req() req) {
     const tokens = await this.authService.login(req.user);
+    
     // 環境変数からフロントエンドURLを取得
-    const frontendBaseUrl = this.configService.get<string>('FRONTEND_URL');
+    let frontendBaseUrl = this.configService.get<string>('FRONTEND_URL');
+    
+    // 本番環境の場合、または環境変数が設定されていない場合は本番URLを使用
+    if (process.env.NODE_ENV === 'production' || !frontendBaseUrl) {
+      frontendBaseUrl = 'https://lynx-frontend.onrender.com';
+    }
+    
     const frontendUrl = new URL(`${frontendBaseUrl}/auth/success`);
     frontendUrl.searchParams.set('token', tokens.accessToken);
     frontendUrl.searchParams.set('refreshToken', tokens.refreshToken);
