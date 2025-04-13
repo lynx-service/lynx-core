@@ -9,10 +9,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(private readonly configService: ConfigService,
     private readonly authService: AuthService
   ) {
+    // 環境変数からバックエンドURLを取得してコールバックURLを生成
+    const backendUrl = configService.get<string>('BACKEND_URL');
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: 'http://localhost:3000/auth/google/callback',
+      callbackURL: `${backendUrl}/auth/google/callback`,
       scope: ['email', 'profile'],
     });
   }

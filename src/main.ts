@@ -11,7 +11,8 @@ async function bootstrap() {
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   app.enableCors({
-    origin: 'http://localhost:5173',
+    // 環境変数からフロントエンドのURLを取得
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   });
   app.useGlobalPipes(new ValidationPipe());
