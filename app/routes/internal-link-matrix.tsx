@@ -4,15 +4,17 @@ import { useState, useEffect, useMemo } from "react";
 import { useToast } from "~/hooks/use-toast";
 import { getSession } from "~/utils/session.server"; // sessionユーティリティをインポート
 import { requireAuth } from "~/utils/auth.server"; // 認証ユーティリティをインポート
-import { analyzeSeoWithGemini } from "~/utils/gemini.server"; // Gemini API連携
+import { analyzeSeoWithGemini } from "~/utils/gemini.server"; // Gemini API連携 - インポートを元に戻す
 import type { ArticleItem } from "~/types/article";
 import InternalLinkMatrix from '~/components/matrix/InternalLinkMatrix'; // 作成したコンポーネントをインポート
 import ArticleDetailSidebar from '~/components/matrix/ArticleDetailSidebar'; // 作成したコンポーネントをインポート
 import MatrixSearchFilter from '~/components/matrix/MatrixSearchFilter'; // 新しいコンポーネントをインポート
 import MatrixStats from '~/components/matrix/MatrixStats'; // 新しいコンポーネントをインポート
+import AiAnalysisSection from '~/components/matrix/AiAnalysisSection'; // 新しいコンポーネントをインポート
+import { useOverallAnalysis } from '~/hooks/useOverallAnalysis'; // 新しいフックをインポート
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-import type { OverallSeoAnalysis } from "~/hooks/use-article-analysis";
+// import type { OverallSeoAnalysis } from "~/hooks/use-article-analysis"; // 型はフック内で使用
 
 // meta関数
 export function meta({ }: Route.MetaArgs) {
@@ -45,43 +47,13 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
 
     const articles = await response.json();
     
-    // 全体的なSEO分析を実行
-    const isolatedCount = articles.filter((a: ArticleItem) => 
-      (a.internalLinks?.length || 0) === 0 && 
-      (a.linkedFrom?.length || 0) === 0
-    ).length;
-    
-    const noOutgoingCount = articles.filter((a: ArticleItem) => 
-      (a.internalLinks?.length || 0) === 0
-    ).length;
-    
-    const noIncomingCount = articles.filter((a: ArticleItem) => 
-      (a.linkedFrom?.length || 0) === 0
-    ).length;
-    
-    const totalLinks = articles.reduce((sum: number, a: ArticleItem) => 
-      sum + (a.internalLinks?.length || 0), 0
-    );
-    
-    const averageLinkDensity = articles.length > 0 
-      ? totalLinks / articles.length
-      : 0;
-    
-    // Gemini APIを使用して全体的なSEO分析を実行
-    const overallAnalysis = await analyzeSeoWithGemini({
-      isOverallAnalysis: true,
-      articleCount: articles.length,
-      isolatedCount,
-      noOutgoingCount,
-      noIncomingCount,
-      averageLinkDensity,
-    });
+    // 全体的なSEO分析はリソースルートに移動
     
     return { 
       articles, 
       user, 
       error: null,
-      seoAnalysis: overallAnalysis
+      // seoAnalysis: overallAnalysis // 削除
     };
   } catch (error) {
     console.error("API fetch error:", error);
@@ -90,12 +62,12 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
       articles: [], 
       user, 
       error: error instanceof Error ? error.message : "データの取得に失敗しました",
-      seoAnalysis: null
+      // seoAnalysis: null // 削除
     };
   }
 };
 
-// action関数 - 個別記事のSEO分析
+// action関数 - 個別記事のSEO分析 (これは残す - ArticleDetailSidebarで使用される可能性があるため)
 export const action = async ({ request }: Route.ActionArgs) => {
   // ログインチェック
   await requireAuth(request);
@@ -154,23 +126,24 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 // デフォルトエクスポート
 export default function InternalLinkMatrixRoute() {
-  const { articles, error, seoAnalysis } = useLoaderData<typeof loader>(); // userはここでは使わないので省略
+  const { articles, error: loaderError } = useLoaderData<typeof loader>(); // loaderのエラーを loaderError にリネーム
+  const { runAnalysis, analysisResult, isLoading: isAnalysisLoading, error: analysisError } = useOverallAnalysis(); // フックから error を analysisError として取得
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast(); // エラー表示用
   const [searchTerm, setSearchTerm] = useState(""); // 検索語
   const [filterType, setFilterType] = useState<"all" | "hasLinks" | "noLinks" | "isolated" | "needsIncoming" | "needsOutgoing">("all"); // 拡張されたフィルタータイプ
 
-  // エラーハンドリング
+  // エラーハンドリング (loaderからのエラー)
   useEffect(() => {
-    if (error) {
+    if (loaderError) {
       toast({
-        title: "エラー",
-        description: error,
+        title: "データ読み込みエラー",
+        description: loaderError,
         variant: "destructive",
       });
     }
-  }, [error, toast]);
+  }, [loaderError, toast]);
 
   // 検索とフィルタリング
   const filteredArticles = useMemo(() => {
@@ -230,31 +203,42 @@ export default function InternalLinkMatrixRoute() {
       {articles && articles.length > 0 && (
         <div className="container w-full overflow-x-auto">
           <div className="min-w-[640px] max-w-7xl">
-            <MatrixStats articles={articles} seoAnalysis={seoAnalysis} />
+            <MatrixStats articles={articles} />
           </div>
         </div>
       )}
 
-      {/* エラーメッセージ表示 */}
-      {error && (
+      {/* エラーメッセージ表示 (loaderからのエラー) */}
+      {loaderError && (
         <div className="container mb-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>エラー</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
+            <AlertTitle>データ読み込みエラー</AlertTitle>
+            <AlertDescription>{loaderError}</AlertDescription>
           </Alert>
         </div>
       )}
 
-      {/* 検索・フィルター部分（固定表示） */}
-      <MatrixSearchFilter
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterType={filterType}
-        setFilterType={setFilterType}
-        articles={articles}
-        filteredArticles={filteredArticles}
-      />
+      {/* 検索・フィルター・AI分析ボタン部分（固定表示） */}
+      <div className="sticky top-0 z-10 bg-background border-b mb-4">
+        <div className="container py-3 flex flex-wrap items-center gap-4 max-w-7xl">
+          <MatrixSearchFilter
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            filterType={filterType}
+            setFilterType={setFilterType}
+            articles={articles}
+            filteredArticles={filteredArticles}
+          />
+          {/* AI分析セクションを追加 */}
+          <AiAnalysisSection 
+            runAnalysis={runAnalysis} 
+            analysisResult={analysisResult} 
+            isLoading={isAnalysisLoading}
+            error={analysisError} // error プロパティを渡す
+          />
+        </div>
+      </div>
 
       {/* マトリクス表示エリア（スクロール可能） */}
       <div className="flex-grow py-4 w-full overflow-hidden">
@@ -265,7 +249,7 @@ export default function InternalLinkMatrixRoute() {
               onCellClick={handleCellClick}
             />
           ) : (
-            !error && (
+            !loaderError && ( // loaderErrorがない場合のみ表示
               <div className="p-8 text-center">
                 <p className="text-muted-foreground">表示する記事データがありません。</p>
                 {searchTerm || filterType !== "all" ? (
