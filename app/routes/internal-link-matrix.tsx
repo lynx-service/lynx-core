@@ -2,19 +2,18 @@ import type { Route } from "../+types/root";
 import { useLoaderData } from "react-router";
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "~/hooks/use-toast";
-import { getSession } from "~/utils/session.server"; // sessionユーティリティをインポート
-import { requireAuth } from "~/utils/auth.server"; // 認証ユーティリティをインポート
-import { analyzeSeoWithGemini } from "~/utils/gemini.server"; // Gemini API連携 - インポートを元に戻す
+import { getSession } from "~/utils/session.server";
+import { requireAuth } from "~/utils/auth.server";
+import { analyzeSeoWithGemini } from "~/utils/gemini.server";
 import type { ArticleItem } from "~/types/article";
-import InternalLinkMatrix from '~/components/matrix/InternalLinkMatrix'; // 作成したコンポーネントをインポート
-import ArticleDetailSidebar from '~/components/matrix/ArticleDetailSidebar'; // 作成したコンポーネントをインポート
-import MatrixSearchFilter from '~/components/matrix/MatrixSearchFilter'; // 新しいコンポーネントをインポート
-import MatrixStats from '~/components/matrix/MatrixStats'; // 新しいコンポーネントをインポート
-import AiAnalysisSection from '~/components/matrix/AiAnalysisSection'; // 新しいコンポーネントをインポート
-import { useOverallAnalysis } from '~/hooks/useOverallAnalysis'; // 新しいフックをインポート
+import InternalLinkMatrix from '~/components/matrix/InternalLinkMatrix';
+import ArticleDetailSidebar from '~/components/matrix/ArticleDetailSidebar';
+import MatrixSearchFilter from '~/components/matrix/MatrixSearchFilter';
+import MatrixStats from '~/components/matrix/MatrixStats';
+import AiAnalysisSection from '~/components/matrix/AiAnalysisSection';
+import { useOverallAnalysis } from '~/hooks/useOverallAnalysis';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
-// import type { OverallSeoAnalysis } from "~/hooks/use-article-analysis"; // 型はフック内で使用
 
 // meta関数
 export function meta({ }: Route.MetaArgs) {
@@ -46,79 +45,75 @@ export const loader = async ({ request }: Route.LoaderArgs) => {
     }
 
     const articles = await response.json();
-    
-    // 全体的なSEO分析はリソースルートに移動
-    
-    return { 
-      articles, 
-      user, 
+
+    return {
+      articles,
+      user,
       error: null,
-      // seoAnalysis: overallAnalysis // 削除
     };
   } catch (error) {
     console.error("API fetch error:", error);
     // エラー発生時は空の配列とエラーメッセージを返す
-    return { 
-      articles: [], 
-      user, 
+    return {
+      articles: [],
+      user,
       error: error instanceof Error ? error.message : "データの取得に失敗しました",
-      // seoAnalysis: null // 削除
     };
   }
 };
 
-// action関数 - 個別記事のSEO分析 (これは残す - ArticleDetailSidebarで使用される可能性があるため)
+// action関数 - 個別記事のSEO分析
 export const action = async ({ request }: Route.ActionArgs) => {
   // ログインチェック
   await requireAuth(request);
-  
+
   const formData = await request.formData();
   const articleId = formData.get('articleId') as string;
-  
+
   if (!articleId) {
-    return { 
-      success: false, 
-      analysis: { 
-        error: true, 
-        message: "記事IDが指定されていません" 
+    return {
+      success: false,
+      analysis: {
+        error: true,
+        message: "記事IDが指定されていません"
       }
     };
   }
-  
+
   const session = await getSession(request.headers.get("Cookie"));
   const token = session.get("token");
-  
+
   try {
     // 特定の記事データを取得
-    const response = await fetch(`http://localhost:3000/scraping/${articleId}`, { // <- 'articles/' を削除
+    const response = await fetch(`http://localhost:3000/scraping/${articleId}`, {
       headers: {
         "Authorization": `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     const articleData = await response.json();
-    
+
     // 記事個別のSEO分析を実行
     const articleAnalysis = await analyzeSeoWithGemini({
       ...articleData,
       isOverallAnalysis: false
     });
-    
-    return { 
-      success: true, 
-      analysis: articleAnalysis 
+
+    return {
+      success: true,
+      analysis: articleAnalysis
     };
   } catch (error) {
     console.error("Article analysis error:", error);
-    return { 
-      success: false, 
-      analysis: { 
-        error: true, 
-        message: error instanceof Error ? error.message : "分析に失敗しました" 
+    return {
+      success: false,
+      analysis: {
+        error: true,
+        message: error instanceof Error ? error.message : "分析に失敗しました"
       }
     };
   }
@@ -126,13 +121,13 @@ export const action = async ({ request }: Route.ActionArgs) => {
 
 // デフォルトエクスポート
 export default function InternalLinkMatrixRoute() {
-  const { articles, error: loaderError } = useLoaderData<typeof loader>(); // loaderのエラーを loaderError にリネーム
-  const { runAnalysis, analysisResult, isLoading: isAnalysisLoading, error: analysisError } = useOverallAnalysis(); // フックから error を analysisError として取得
+  const { articles, error: loaderError } = useLoaderData<typeof loader>();
+  const { runAnalysis, analysisResult, isLoading: isAnalysisLoading, error: analysisError } = useOverallAnalysis();
   const [selectedArticle, setSelectedArticle] = useState<ArticleItem | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast(); // エラー表示用
   const [searchTerm, setSearchTerm] = useState(""); // 検索語
-  const [filterType, setFilterType] = useState<"all" | "hasLinks" | "noLinks" | "isolated" | "needsIncoming" | "needsOutgoing">("all"); // 拡張されたフィルタータイプ
+  const [filterType, setFilterType] = useState<"all" | "hasLinks" | "noLinks" | "isolated" | "needsIncoming" | "needsOutgoing">("all");
 
   // エラーハンドリング (loaderからのエラー)
   useEffect(() => {
@@ -150,15 +145,15 @@ export default function InternalLinkMatrixRoute() {
     return articles.filter((article: ArticleItem) => {
       // 検索フィルター
       const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = searchTerm === "" || 
+      const matchesSearch = searchTerm === "" ||
         article.metaTitle?.toLowerCase().includes(searchLower) ||
         article.metaDescription?.toLowerCase().includes(searchLower) ||
         article.articleUrl?.toLowerCase().includes(searchLower);
-      
+
       // リンク状態の判定
       const hasOutgoingLinks = (article.internalLinks?.length || 0) > 0;
       const hasIncomingLinks = (article.linkedFrom?.length || 0) > 0;
-      
+
       // フィルタータイプに応じた絞り込み
       switch (filterType) {
         case "hasLinks":
@@ -230,12 +225,12 @@ export default function InternalLinkMatrixRoute() {
             articles={articles}
             filteredArticles={filteredArticles}
           />
-          {/* AI分析セクションを追加 */}
-          <AiAnalysisSection 
-            runAnalysis={runAnalysis} 
-            analysisResult={analysisResult} 
+          {/* AI分析セクション */}
+          <AiAnalysisSection
+            runAnalysis={runAnalysis}
+            analysisResult={analysisResult}
             isLoading={isAnalysisLoading}
-            error={analysisError} // error プロパティを渡す
+            error={analysisError}
           />
         </div>
       </div>

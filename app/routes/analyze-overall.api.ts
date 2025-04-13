@@ -1,16 +1,15 @@
-import type { ActionFunctionArgs } from "react-router"; // react-router からインポート
-// json ヘルパーは削除
+import type { ActionFunctionArgs } from "react-router";
 import { getSession } from "~/utils/session.server";
 import { requireAuth } from "~/utils/auth.server";
 import { analyzeSeoWithGemini } from "~/utils/gemini.server";
 import type { ArticleItem } from "~/types/article";
-import type { OverallSeoAnalysis } from "~/hooks/use-article-analysis"; // 型をインポート
+import type { OverallSeoAnalysis } from "~/hooks/use-article-analysis";
 
 /**
  * サイト全体のSEO分析を実行するAPIエンドポイント (リソースルート)
  * POSTリクエストでトリガーされる
  */
-export const action = async ({ request }: ActionFunctionArgs): Promise<Response> => { // 戻り値の型を Response に指定
+export const action = async ({ request }: ActionFunctionArgs): Promise<Response> => {
   // ログインチェック
   await requireAuth(request);
 
@@ -18,7 +17,7 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
   const token = session.get("token");
 
   try {
-    // 記事データを取得 (internal-link-matrix.tsxのloaderからロジックを移動)
+    // 記事データを取得
     const response = await fetch("http://localhost:3000/scraping/project/1", {
       headers: {
         "Authorization": `Bearer ${token}`
@@ -99,7 +98,6 @@ export const action = async ({ request }: ActionFunctionArgs): Promise<Response>
 };
 
 // このルートはAPIエンドポイントなので、デフォルトのReactコンポーネントは不要
-// loaderも不要
 export default function ApiAnalyzeOverall() {
   return null; // 何もレンダリングしない
 }

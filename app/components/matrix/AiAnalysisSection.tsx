@@ -34,7 +34,7 @@ export default function AiAnalysisSection({
   // 分析実行ハンドラー
   const handleRunAnalysis = () => {
     try {
-      runAnalysis(); // await を削除
+      runAnalysis();
       // 分析成功後、結果があればダイアログを開く
       // analysisResultはrunAnalysis内で更新される想定
       // ここでは直接チェックせず、isLoadingの完了を待つ
