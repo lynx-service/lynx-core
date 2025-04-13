@@ -4,7 +4,9 @@ import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { X, Sparkles, Loader2, ThumbsUp, ThumbsDown, AlertCircle, ArrowRight, Lightbulb, CheckCircle } from "lucide-react"; // アイコンをインポート
-import { useArticleAnalysis } from '~/hooks/use-article-analysis';
+import { useArticleAnalysis } from '~/hooks/use-article-analysis'; // useArticleAnalysis のみをインポート
+import type { SeoAnalysisResult } from '~/hooks/use-article-analysis'; // SeoAnalysisResult を type としてインポート
+import { useEffect } from 'react'; // useEffect をインポート
 
 /**
  * 内部リンクのバランス状態を評価し、適切な色を返す
@@ -143,16 +145,33 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
     return null; // 記事が選択されていない場合は何も表示しない
   }
 
-  // 記事のSEO分析を行う
-  const { analysis, isLoading, error } = useArticleAnalysis(isOpen && article.id ? String(article.id) : null);
+  // フックを呼び出す (articleId は渡さない)
+  const { analysis, isLoading, error, analyzeArticle, hasData } = useArticleAnalysis();
+
+  // サイドバーが開かれたとき、または記事が変わったときに前の分析結果をクリアする
+  // ※ useArticleAnalysis フック自体にリセット機能がないため、
+  //   ここでは表示を制御することで対応（hasData フラグを利用）
+  //   もし厳密なリセットが必要な場合はフック側の改修も検討
+
+  const handleAnalyzeClick = () => {
+    if (article?.id) {
+      analyzeArticle(String(article.id));
+    }
+  };
+
+  // article が null の場合は早期リターン
+  if (!article) {
+    return null;
+  }
 
   return (
-  <div 
-      className={`fixed top-0 right-0 h-full w-[320px] sm:w-[400px] md:w-[480px] lg:w-[540px] bg-background/100 border-l border-border shadow-xl flex flex-col z-50 overflow-hidden transition-transform duration-300 ease-in-out ${
+  <div
+      className={`fixed top-0 right-0 h-full w-[320px] sm:w-[400px] md:w-[480px] lg:w-[540px] bg-background/100 border-l border-border shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
-      <div className="p-6 border-b flex justify-between items-center">
+      {/* ヘッダー (スクロールしない部分) */}
+      <div className="p-6 border-b flex justify-between items-center flex-shrink-0">
         <div>
           <h2 className="text-xl font-semibold">記事詳細</h2>
           <p className="text-sm text-muted-foreground">
@@ -169,22 +188,24 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
           <span className="sr-only">閉じる</span>
         </Button>
       </div>
-      
-      {/* タブ付きコンテンツ */}
-      <Tabs defaultValue="basic" className="flex-grow flex flex-col">
-        <div className="px-6 pt-4">
-          <TabsList className="grid grid-cols-3 mb-2">
-            <TabsTrigger value="basic">基本情報</TabsTrigger>
-            <TabsTrigger value="links">内部リンク</TabsTrigger>
-            <TabsTrigger value="seo">SEO分析</TabsTrigger>
-          </TabsList>
-        </div>
-        
-        {/* 基本情報タブ */}
-        <TabsContent value="basic" className="flex-grow overflow-y-auto px-6">
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold mb-1">タイトル</h3>
+
+      {/* スクロール可能領域 */}
+      <div className="flex-grow overflow-y-auto"> {/* この div がスクロールを担当 */}
+        <Tabs defaultValue="basic" className="flex flex-col h-full"> {/* h-full を追加 */}
+          {/* タブリスト (スクロール時に追従) */}
+          <div className="px-6 pt-4 sticky top-0 bg-background z-10 border-b">
+            <TabsList className="grid grid-cols-3 w-full"> {/* w-full を追加 */}
+              <TabsTrigger value="basic">基本情報</TabsTrigger>
+              <TabsTrigger value="links">内部リンク</TabsTrigger>
+              <TabsTrigger value="seo">SEO分析</TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* 基本情報タブ */}
+          <TabsContent value="basic" className="px-6 pb-6 mt-4"> {/* mt-4 を追加, flex-grow, overflow-y-auto を削除 */}
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-1">タイトル</h3>
               <p className="text-sm text-muted-foreground">{article.metaTitle}</p>
             </div>
             <div>
@@ -244,9 +265,9 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
             </div>
           </div>
         </TabsContent>
-        
+
         {/* 内部リンクタブ */}
-        <TabsContent value="links" className="flex-grow overflow-y-auto px-6">
+        <TabsContent value="links" className="px-6 pb-6 mt-4"> {/* mt-4 を追加, flex-grow, overflow-y-auto を削除 */}
           <div className="space-y-6">
             {/* 発リンク（この記事から他の記事へのリンク） */}
             <div>
@@ -312,9 +333,9 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
             </div>
           </div>
         </TabsContent>
-        
+
         {/* SEO分析タブ */}
-        <TabsContent value="seo" className="flex-grow overflow-y-auto px-6">
+        <TabsContent value="seo" className="px-6 pb-6 mt-4"> {/* mt-4 を追加, flex-grow, overflow-y-auto を削除 */}
           <div className="space-y-4">
             {/* AI分析結果 */}
             <div>
@@ -322,20 +343,36 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
                 <Sparkles className="h-4 w-4 mr-2 text-primary" />
                 AI SEO分析
               </h3>
-              
+
+              {/* 分析実行ボタン */}
+              {!isLoading && !hasData && !error && ( // ローディング中でなく、データがなく、エラーもない場合
+                <div className="bg-muted p-4 rounded-md text-center mb-4">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    この記事のSEO分析を実行しますか？
+                  </p>
+                  <Button onClick={handleAnalyzeClick} disabled={isLoading}>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    分析を実行
+                  </Button>
+                </div>
+              )}
+
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-8 bg-muted rounded-md">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">AI分析を実行中...</p>
                 </div>
               ) : error ? (
-                <div className="bg-muted p-3 rounded-md">
+                <div className="bg-muted p-3 rounded-md mb-4"> {/* エラー表示にもマージン追加 */}
                   <p className="text-sm text-red-500">
                     <AlertCircle className="h-4 w-4 inline mr-1" />
                     分析中にエラーが発生しました: {error}
                   </p>
+                   <Button onClick={handleAnalyzeClick} variant="outline" size="sm" className="mt-2">
+                     再試行
+                   </Button>
                 </div>
-              ) : analysis ? (
+              ) : hasData && analysis ? ( // データがある場合のみ分析結果を表示
                 <div className="space-y-4">
                   <div className="flex items-center bg-muted p-3 rounded-md">
                     <div className="w-16 h-16 flex items-center justify-center">
@@ -404,15 +441,15 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="bg-muted p-3 rounded-md">
-                  <p className="text-sm text-muted-foreground">
-                    AI分析はまだ実行されていません。
-                  </p>
-                </div>
+              ) : !isLoading && !error && ( // ローディング中でもエラーでもなく、データもない場合 (ボタン押下前)
+                 <div className="bg-muted p-3 rounded-md">
+                   <p className="text-sm text-muted-foreground">
+                    「分析を実行」ボタンを押してください。
+                   </p>
+                 </div>
               )}
             </div>
-            
+
             {/* 基本的な内部リンク分析 */}
             <div>
               <h3 className="font-semibold mb-2">内部リンク分析</h3>
@@ -453,11 +490,54 @@ export default function ArticleDetailSidebar({ article, isOpen, onClose }: Artic
                 </ul>
               </div>
             </div>
+
+            {/* 基本的な内部リンク分析 */}
+            <div>
+              <h3 className="font-semibold mb-2">内部リンク分析</h3>
+              <div className="bg-muted p-3 rounded-md">
+                <ul className="space-y-2">
+                  {/* 内部リンクの状態に基づいた分析情報 */}
+                  <li className="text-sm">
+                    <span className="font-medium">内部リンク状態: </span>
+                    <span className={`${getBalanceColor(article)}`}> {/* null チェック済み */}
+                      {getBalanceText(article)} {/* null チェック済み */}
+                    </span>
+                  </li>
+                  <li className="text-sm">
+                    <span className="font-medium">孤立状態: </span>
+                    <span className={`${getIsolationColor(article)}`}> {/* null チェック済み */}
+                      {getIsolationText(article)} {/* null チェック済み */}
+                    </span>
+                  </li>
+                  <li className="text-sm">
+                    <span className="font-medium">リンク品質: </span>
+                    {article.internalLinks?.some(link => !link.isFollow) ? (
+                      <span className="text-amber-600">一部nofollowリンクがあります</span>
+                    ) : (
+                      <span className="text-emerald-600">すべてfollowリンクです</span>
+                    )}
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-2">改善提案</h3>
+              <div className="bg-muted p-3 rounded-md">
+                <ul className="space-y-2 text-sm list-disc list-inside">
+                  {getSeoSuggestions(article).map((suggestion, index) => ( /* null チェック済み */
+                    <li key={`suggestion-${index}`}>{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         </TabsContent>
-      </Tabs>
-      
-      <div className="mt-auto p-6 border-t">
+        </Tabs> {/* Tabs の閉じタグ */}
+      </div> {/* スクロール可能領域の閉じタグ */}
+
+      {/* フッター (スクロールしない部分) */}
+      <div className="p-6 border-t flex-shrink-0">
         <Button variant="outline" onClick={onClose} className="w-full">
           閉じる
         </Button>

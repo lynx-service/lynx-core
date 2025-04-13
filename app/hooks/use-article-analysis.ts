@@ -1,5 +1,5 @@
 import { useFetcher } from 'react-router';
-import { useEffect } from 'react';
+import { useCallback } from 'react'; // useCallback をインポート
 import type { ArticleItem } from '~/types/article';
 
 export interface SeoAnalysisResult {
@@ -14,24 +14,28 @@ export interface SeoAnalysisResult {
 
 /**
  * 記事のSEO分析を行うためのフック
- * @param articleId 分析対象の記事ID（nullの場合は分析を行わない）
  */
-export function useArticleAnalysis(articleId: string | null) {
+export function useArticleAnalysis() { // articleId を引数から削除
   const fetcher = useFetcher<{ success: boolean; analysis: SeoAnalysisResult }>();
-  
-  useEffect(() => {
-    if (articleId && fetcher.state === 'idle' && !fetcher.data) {
+
+  // useEffect を削除
+
+  // 分析を実行する関数
+  const analyzeArticle = useCallback((articleId: string) => {
+    if (fetcher.state === 'idle') { // 実行中でなければ実行
       fetcher.submit(
         { articleId },
         { method: 'post', action: '/internal-link-matrix' }
       );
     }
-  }, [articleId, fetcher]);
-  
+  }, [fetcher]);
+
   return {
     analysis: fetcher.data?.analysis,
     isLoading: fetcher.state !== 'idle',
-    error: fetcher.data?.success === false ? fetcher.data?.analysis?.message : undefined
+    error: fetcher.data?.success === false ? fetcher.data?.analysis?.message : undefined,
+    analyzeArticle, // 関数を返す
+    hasData: fetcher.data !== undefined // データがあるかどうかを示すフラグを追加
   };
 }
 
