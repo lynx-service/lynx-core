@@ -14,7 +14,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     
     // 本番環境の場合、または環境変数が設定されていない場合は本番URLを使用
     if (process.env.NODE_ENV === 'production' || !backendUrl) {
-      backendUrl = 'https://lynx-backend.onrender.com';
+      backendUrl = 'https://lynx-core.onrender.com';
     }
     
     super({
