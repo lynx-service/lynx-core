@@ -123,10 +123,13 @@ model Keyword {
   parentId     Int?     @map("parent_id")
   level        Int      @default(1) @map("level")
   searchVolume Int      @default(0) @map("search_volume")
-  cpc          Int?     @map("cpc")
+  difficulty   String?  @map("difficulty") // 競合性・難易度
+  relevance    String?  @map("relevance") // メディア目的適合度
+  searchIntent String?  @map("search_intent") // KWの検索意図
+  importance   String?  @map("importance") // KWの重要度
+  memo         String?  @map("memo") // メモ欄
   createdAt    DateTime @default(now()) @map("created_at")
-
-  updatedAt     DateTime         @updatedAt @map("updated_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
   project       Project          @relation(fields: [projectId], references: [id])
   articles      KeywordArticle[]
   parentKeyword Keyword?         @relation("ParentKeyword", fields: [parentId], references: [id])

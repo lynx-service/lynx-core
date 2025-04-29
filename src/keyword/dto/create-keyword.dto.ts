@@ -50,9 +50,48 @@ export class CreateKeywordDto {
   @Min(0, { message: '検索ボリュームは0以上である必要があります' })
   searchVolume?: number = 0;
 
-  @ApiProperty({ description: 'CPC（任意）', example: 100, required: false })
+  @ApiProperty({
+    description: '競合性・難易度（任意）',
+    example: '中',
+    required: false,
+  })
   @IsOptional()
-  @IsInt({ message: 'CPCは数値である必要があります' })
-  @Min(0, { message: 'CPCは0以上である必要があります' })
-  cpc?: number;
+  @IsString({ message: '競合性・難易度は文字列である必要があります' })
+  difficulty?: string;
+
+  @ApiProperty({
+    description: 'メディア目的適合度（任意）',
+    example: '〇',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'メディア目的適合度は文字列である必要があります' })
+  relevance?: string;
+
+  @ApiProperty({
+    description: 'KWの検索意図（任意）',
+    example: 'Informational',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'KWの検索意図は文字列である必要があります' })
+  searchIntent?: string;
+
+  @ApiProperty({
+    description: 'KWの重要度（任意）',
+    example: '高',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'KWの重要度は文字列である必要があります' })
+  importance?: string;
+
+  @ApiProperty({
+    description: 'メモ欄（任意）',
+    example: 'この記事で対策する',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'メモ欄は文字列である必要があります' })
+  memo?: string;
 }

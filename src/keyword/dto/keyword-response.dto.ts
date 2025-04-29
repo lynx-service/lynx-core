@@ -23,8 +23,36 @@ export class KeywordResponseDto implements Keyword {
   @ApiProperty({ description: '検索ボリューム', example: 1000 })
   searchVolume: number;
 
-  @ApiProperty({ description: 'CPC', example: 50, nullable: true })
-  cpc: number | null;
+  @ApiProperty({
+    description: '競合性・難易度',
+    example: '中',
+    nullable: true,
+  })
+  difficulty: string | null;
+
+  @ApiProperty({
+    description: 'メディア目的適合度',
+    example: '〇',
+    nullable: true,
+  })
+  relevance: string | null;
+
+  @ApiProperty({
+    description: 'KWの検索意図',
+    example: 'Informational',
+    nullable: true,
+  })
+  searchIntent: string | null;
+
+  @ApiProperty({ description: 'KWの重要度', example: '高', nullable: true })
+  importance: string | null;
+
+  @ApiProperty({
+    description: 'メモ欄',
+    example: 'この記事で対策する',
+    nullable: true,
+  })
+  memo: string | null;
 
   @ApiProperty({ description: '作成日時' })
   createdAt: Date;
