@@ -42,12 +42,20 @@ export class KeywordArticleDao {
   /**
    * 記事IDに紐づく関連付けを検索する
    * @param articleId - 記事ID
-   * @returns 見つかった KeywordArticle レコードの配列
+   * @returns 見つかった KeywordArticle レコード（関連キーワードの親子関係含む）の配列
    */
   async findByArticleId(articleId: number) {
+    // 関連するキーワード情報とその親子関係を含めて取得
     return this.prisma.keywordArticle.findMany({
       where: { articleId },
-      include: { keyword: true }, // 関連するキーワード情報も取得
+      include: {
+        keyword: {
+          include: {
+            parentKeyword: true, // 親キーワードを取得
+            childKeywords: true, // 直接の子キーワードを取得
+          },
+        },
+      },
     });
   }
 

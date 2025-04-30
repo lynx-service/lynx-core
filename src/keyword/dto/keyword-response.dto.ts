@@ -4,7 +4,10 @@ import { Keyword } from '@prisma/client';
 /**
  * キーワード情報のレスポンス DTO
  */
-export class KeywordResponseDto implements Keyword {
+export class KeywordResponseDto
+  implements
+    Omit<Keyword, 'parentKeyword' | 'childKeywords'> /* Prismaの型と一部異なるためOmit */
+{
   @ApiProperty({ description: 'キーワードID', example: 1 })
   id: number;
 
@@ -59,4 +62,19 @@ export class KeywordResponseDto implements Keyword {
 
   @ApiProperty({ description: '更新日時' })
   updatedAt: Date;
+
+  // --- 追加 ---
+  @ApiProperty({
+    description: '親キーワード情報',
+    type: () => KeywordResponseDto, // 自己参照のため関数形式で指定
+    nullable: true,
+  })
+  parentKeyword: KeywordResponseDto | null;
+
+  @ApiProperty({
+    description: '子キーワード情報（直接の子のみ）',
+    type: [KeywordResponseDto], // 配列形式で指定
+  })
+  childKeywords: KeywordResponseDto[];
+  // --- ここまで ---
 }

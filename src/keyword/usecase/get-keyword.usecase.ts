@@ -2,7 +2,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { KeywordDao } from '../dao/keyword.dao';
 import { KeywordResponseDto } from '../dto/keyword-response.dto';
-import { Keyword } from '@prisma/client';
+import { Keyword } from '@prisma/client'; // Keyword型をインポート
+
+// DAOから取得するKeywordの型を定義（親子関係を含む）
+type KeywordWithRelations = Keyword & {
+  parentKeyword: Keyword | null;
+  childKeywords: Keyword[];
+};
 
 @Injectable()
 export class GetKeywordUsecase {
@@ -28,26 +34,37 @@ export class GetKeywordUsecase {
   }
 
   /**
-   * KeywordエンティティをKeywordResponseDtoにマッピングする
-   * @param keyword Keywordエンティティ
+   * Keywordエンティティ（親子関係含む）をKeywordResponseDtoにマッピングする
+   * @param keyword Keywordエンティティ（親子関係含む）
    * @returns KeywordResponseDto
    */
-  private mapToDto(keyword: Keyword): KeywordResponseDto {
-    // Keywordエンティティの全プロパティをKeywordResponseDtoにマッピングする
-    return {
+  private mapToDto(keyword: KeywordWithRelations): KeywordResponseDto {
+    // KeywordエンティティのプロパティをKeywordResponseDtoにマッピング
+    const dto: KeywordResponseDto = {
       id: keyword.id,
       projectId: keyword.projectId,
-      keywordName: keyword.keywordName, // 'name' から 'keywordName' に修正
+      keywordName: keyword.keywordName,
       parentId: keyword.parentId,
       level: keyword.level,
       searchVolume: keyword.searchVolume,
-      difficulty: keyword.difficulty,
-      relevance: keyword.relevance,
-      searchIntent: keyword.searchIntent,
-      importance: keyword.importance,
-      memo: keyword.memo,
+      difficulty: keyword.difficulty ?? null, // null合体演算子でnullを許容
+      relevance: keyword.relevance ?? null,
+      searchIntent: keyword.searchIntent ?? null,
+      importance: keyword.importance ?? null,
+      memo: keyword.memo ?? null,
       createdAt: keyword.createdAt,
       updatedAt: keyword.updatedAt,
+      // --- 親子関係のマッピングを追加 ---
+      parentKeyword: keyword.parentKeyword
+        ? this.mapToDto(keyword.parentKeyword as KeywordWithRelations) // 親を再帰的にマッピング ※型アサーションが必要
+        : null,
+      childKeywords: keyword.childKeywords
+        ? keyword.childKeywords.map((child) =>
+            this.mapToDto(child as KeywordWithRelations), // 子を再帰的にマッピング ※型アサーションが必要
+          )
+        : [],
+      // --- ここまで ---
     };
+    return dto;
   }
 }
