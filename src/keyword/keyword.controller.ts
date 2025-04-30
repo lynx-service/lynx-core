@@ -1,6 +1,8 @@
 // src/keyword/keyword.controller.ts
 import {
   Controller,
+  Get, // Getを追加
+  Query, // Queryを追加
   Post,
   Body,
   Patch,
@@ -18,12 +20,15 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery, // ApiQueryを追加
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { CreateKeywordUsecase } from './usecase/create-keyword.usecase';
 import { UpdateKeywordUsecase } from './usecase/update-keyword.usecase';
 import { DeleteKeywordUsecase } from './usecase/delete-keyword.usecase';
-import { Keyword } from '@prisma/client'; // Keyword型をインポート
+import { ListKeywordsByProjectUsecase } from './usecase/list-keywords-by-project.usecase'; // 追加
+import { Keyword } from '@prisma/client';
+import { KeywordResponseDto } from './dto/keyword-response.dto'; // 追加
 
 @ApiTags('keywords') // Swaggerのタグを設定
 @ApiBearerAuth() // SwaggerでBearer認証が必要なことを示す
@@ -34,14 +39,39 @@ export class KeywordController {
     private readonly createKeywordUsecase: CreateKeywordUsecase,
     private readonly updateKeywordUsecase: UpdateKeywordUsecase,
     private readonly deleteKeywordUsecase: DeleteKeywordUsecase,
+    private readonly listKeywordsByProjectUsecase: ListKeywordsByProjectUsecase, // 追加
   ) {}
+
+  @Get() // 新しいエンドポイント
+  @ApiOperation({ summary: '指定したプロジェクトIDのキーワード一覧を取得する' })
+  @ApiQuery({
+    name: 'projectId',
+    required: true,
+    description: 'キーワードを取得するプロジェクトのID',
+    type: Number,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'キーワード一覧の取得に成功しました。',
+    type: [KeywordResponseDto], // レスポンスの型を配列で示す
+  })
+  @ApiResponse({ status: 400, description: 'リクエストが不正です。' })
+  @ApiResponse({ status: 401, description: '認証されていません。' })
+  findByProjectId(
+    @Query('projectId', ParseIntPipe) projectId: number, // クエリパラメータからprojectIdを取得
+  ): Promise<Keyword[]> {
+    // Usecaseを実行してキーワード一覧を取得
+    // DTOへのマッピングはUsecase層またはここで必要に応じて行う
+    // 現状はKeyword[]をそのまま返す
+    return this.listKeywordsByProjectUsecase.execute(projectId);
+  }
 
   @Post()
   @ApiOperation({ summary: 'キーワードを新規登録する' })
   @ApiResponse({
     status: 201,
     description: 'キーワードの作成に成功しました。',
-    type: CreateKeywordDto, // レスポンスの型を示す (実際はKeyword型だがDTOで示すのが一般的)
+    type: KeywordResponseDto, // レスポンスの型をKeywordResponseDtoに変更
   })
   @ApiResponse({ status: 400, description: 'リクエストが不正です。' })
   @ApiResponse({ status: 401, description: '認証されていません。' })
@@ -55,7 +85,7 @@ export class KeywordController {
   @ApiResponse({
     status: 200,
     description: 'キーワードの更新に成功しました。',
-    type: UpdateKeywordDto, // レスポンスの型を示す (実際はKeyword型だがDTOで示すのが一般的)
+    type: KeywordResponseDto, // レスポンスの型をKeywordResponseDtoに変更
   })
   @ApiResponse({ status: 400, description: 'リクエストが不正です。' })
   @ApiResponse({ status: 401, description: '認証されていません。' })
