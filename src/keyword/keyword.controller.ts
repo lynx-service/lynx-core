@@ -26,9 +26,11 @@ import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 import { CreateKeywordUsecase } from './usecase/create-keyword.usecase';
 import { UpdateKeywordUsecase } from './usecase/update-keyword.usecase';
 import { DeleteKeywordUsecase } from './usecase/delete-keyword.usecase';
-import { ListKeywordsByProjectUsecase } from './usecase/list-keywords-by-project.usecase'; // 追加
+import { ListKeywordsByProjectUsecase } from './usecase/list-keywords-by-project.usecase';
+import { GetKeywordUsecase } from './usecase/get-keyword.usecase'; // GetKeywordUsecase をインポート
 import { Keyword } from '@prisma/client';
-import { KeywordResponseDto } from './dto/keyword-response.dto'; // 追加
+import { KeywordResponseDto } from './dto/keyword-response.dto';
+import { ApiParam } from '@nestjs/swagger'; // ApiParam をインポート
 
 @ApiTags('keywords') // Swaggerのタグを設定
 @ApiBearerAuth() // SwaggerでBearer認証が必要なことを示す
@@ -39,10 +41,27 @@ export class KeywordController {
     private readonly createKeywordUsecase: CreateKeywordUsecase,
     private readonly updateKeywordUsecase: UpdateKeywordUsecase,
     private readonly deleteKeywordUsecase: DeleteKeywordUsecase,
-    private readonly listKeywordsByProjectUsecase: ListKeywordsByProjectUsecase, // 追加
+    private readonly listKeywordsByProjectUsecase: ListKeywordsByProjectUsecase,
+    private readonly getKeywordUsecase: GetKeywordUsecase, // GetKeywordUsecase をインジェクト
   ) {}
 
-  @Get() // 新しいエンドポイント
+  @Get(':id') // ID指定で取得するエンドポイント
+  @ApiOperation({ summary: '指定したIDのキーワードを1件取得する' })
+  @ApiParam({ name: 'id', description: '取得するキーワードのID', type: Number }) // パスパラメータの定義
+  @ApiResponse({
+    status: 200,
+    description: 'キーワードの取得に成功しました。',
+    type: KeywordResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'リクエストが不正です。' })
+  @ApiResponse({ status: 401, description: '認証されていません。' })
+  @ApiResponse({ status: 404, description: 'キーワードが見つかりません。' })
+  findById(@Param('id', ParseIntPipe) id: number): Promise<KeywordResponseDto> {
+    // Usecaseを実行してキーワードを取得し、DTOを返す
+    return this.getKeywordUsecase.execute(id);
+  }
+
+  @Get() // プロジェクトIDで一覧取得するエンドポイント
   @ApiOperation({ summary: '指定したプロジェクトIDのキーワード一覧を取得する' })
   @ApiQuery({
     name: 'projectId',
