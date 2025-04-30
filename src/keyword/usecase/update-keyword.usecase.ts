@@ -25,23 +25,31 @@ export class UpdateKeywordUsecase {
       throw new NotFoundException(`ID ${id} のキーワードが見つかりません`);
     }
 
-    // DTOからPrismaのUpdateInput型に変換
-    const updateData: Prisma.KeywordUpdateInput = { ...updateKeywordDto };
-    // projectIdやparentIdが更新データに含まれる場合、リレーションを更新
-    // updateDataの型をPrisma.KeywordUpdateInputにしたので、dto由来のprojectId/parentIdを参照する
-    if (updateKeywordDto.projectId) {
-      updateData.project = { connect: { id: updateKeywordDto.projectId } };
-    }
-    if (updateKeywordDto.parentId) {
-      updateData.parentKeyword = { connect: { id: updateKeywordDto.parentId } };
-    } else if (
-      updateKeywordDto.hasOwnProperty('parentId') &&
-      updateKeywordDto.parentId === null // DTOでparentIdが明示的にnullで渡された場合
-    ) {
-      // parentIdがnullで渡された場合はリレーションを切断
-      updateData.parentKeyword = { disconnect: true };
+    // DTOからリレーションキーを除外し、残りをupdateDataにコピー
+    const { parentId, projectId, ...restDto } = updateKeywordDto;
+    const updateData: Prisma.KeywordUpdateInput = { ...restDto };
+
+    // projectId が DTO に存在する場合、project リレーションを設定
+    // projectId が undefined でないことを確認
+    if (projectId !== undefined) {
+      updateData.project = { connect: { id: projectId } };
     }
 
+    // parentId が DTO に存在する場合（nullを含む）、parentKeyword リレーションを設定
+    // DTOに 'parentId' プロパティが存在するかどうかを確認
+    if (updateKeywordDto.hasOwnProperty('parentId')) {
+      if (parentId !== null && parentId !== undefined) {
+        // parentId が指定されている (null/undefined以外) 場合は接続
+        updateData.parentKeyword = { connect: { id: parentId } };
+      } else {
+        // parentId が null または undefined の場合は切断
+        // DTOで明示的にnullが渡された場合、またはプロパティが存在しない場合にリレーションを切断する
+        updateData.parentKeyword = { disconnect: true };
+      }
+    }
+    // 注意: DTOに parentId プロパティが含まれていない場合は、parentKeyword は更新されません。
+
+    // DAOのupdateメソッドを呼び出し (updateDataにはparentIdは含まれない)
     return this.keywordDao.update(id, updateData);
   }
 }
