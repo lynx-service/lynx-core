@@ -8,6 +8,8 @@ import { PrismaModule } from './share/prisma/prisma.module';
 import { ScrapingModule } from './scraping/scraping.module';
 import { KeywordModule } from './keyword/keyword.module';
 import { KeywordArticleModule } from './keyword-article/keyword-article.module'; // KeywordArticleModule をインポート
+import { ArticleModule } from './article/article.module'; // ArticleModule をインポート
+import { ProjectModule } from './project/project.module'; // ProjectModule をインポート
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { KeywordArticleModule } from './keyword-article/keyword-article.module';
     }),
     KeywordModule,
     KeywordArticleModule, // KeywordArticleModule を追加
+    ArticleModule, // ArticleModule を追加
+    ProjectModule, // ProjectModule を追加
   ],
   controllers: [AppController],
   providers: [AppService],
