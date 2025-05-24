@@ -52,4 +52,16 @@ export class ProjectDao {
       where: { workspaceId },
     });
   }
+
+  /**
+   * 指定されたワークスペースIDに紐づくすべてのプロジェクトを取得する
+   * @param workspaceId ワークスペースID
+   * @returns プロジェクトの配列
+   */
+  async findAllByWorkspaceId(workspaceId: number): Promise<Project[]> {
+    return this.prisma.project.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'asc' }, // 必要に応じてソート順を指定
+    });
+  }
 }

@@ -1,7 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { User, Workspace } from '@prisma/client';
+import { Prisma, User, Workspace } from '@prisma/client'; // Prisma をインポート
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { PrismaService } from 'src/share/prisma/prisma.service';
+
+// findById, findByEmail, findOneWithProject のための型定義
+const userWithWorkspaceAndProjects = Prisma.validator<Prisma.UserDefaultArgs>()({
+  include: {
+    workspace: {
+      include: {
+        projects: true,
+      },
+    },
+    role: true,
+  },
+});
+
+export type UserWithWorkspaceAndProjects = Prisma.UserGetPayload< // export を追加
+  typeof userWithWorkspaceAndProjects
+>;
 
 @Injectable()
 /**
@@ -14,33 +30,60 @@ export class UserDao {
    * ユーザーIDからユーザーを取得
    *
    * @param {number} id
-   * @returns {Promise<User>}
+   * @returns {Promise<UserWithWorkspaceAndProjects | null>}
    */
-  async findById(id: number): Promise<User> {
-    return this.prismaService.user.findUnique({ where: { id } });
+  async findById(id: number): Promise<UserWithWorkspaceAndProjects | null> {
+    return this.prismaService.user.findUnique({
+      where: { id },
+      include: {
+        workspace: {
+          include: {
+            projects: true,
+          },
+        },
+        role: true,
+      },
+    });
   }
 
   /**
    * メールアドレスからユーザーを取得
    *
    * @param {string} email
-   * @returns {User | undefined}
+   * @returns {Promise<UserWithWorkspaceAndProjects | null>}
    */
-  async findByEmail(email: string): Promise<User | undefined> {
-    return this.prismaService.user.findUnique({ where: { email } });
+  async findByEmail(email: string): Promise<UserWithWorkspaceAndProjects | null> {
+    return this.prismaService.user.findUnique({
+      where: { email },
+      include: {
+        workspace: {
+          include: {
+            projects: true,
+          },
+        },
+        role: true,
+      },
+    });
   }
 
   /**
    * ユーザーIDからユーザー情報とプロジェクト情報を取得
    *
    * @param {number} userId ユーザーID
-   * @returns {Promise<User>} ユーザーとプロジェクトの情報
+   * @returns {Promise<UserWithWorkspaceAndProjects | null>} ユーザーとプロジェクトの情報
    */
-  async findOneWithProject(userId: number): Promise<User> {
+  async findOneWithProject(
+    userId: number,
+  ): Promise<UserWithWorkspaceAndProjects | null> {
     return this.prismaService.user.findUnique({
       where: { id: userId },
       include: {
-        workspace: true,
+        workspace: {
+          include: {
+            projects: true,
+          },
+        },
+        role: true,
       },
     });
   }

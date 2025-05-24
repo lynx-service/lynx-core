@@ -18,68 +18,97 @@
 - **レスポンス:**
     - **200 OK:** ユーザー情報取得成功
         - Content-Type: `application/json`
-        - Schema: `UserResponseDto` (仮。実際のレスポンスは `req.user` の内容に依存)
+        - Schema: `UserProfileDto`
           ```json
-          // AuthGuard('jwt') が返す req.user の内容に基づく想定
           {
             "id": 1,
             "email": "user@example.com",
-            "name": "テスト ユーザー",
-            "provider": "google", // または "email" など
-            "providerId": "google_user_id_string", // Googleの場合
-            "role": "USER", // "ADMIN" などもあり得る
-            "createdAt": "2025-01-01T00:00:00.000Z",
-            "updatedAt": "2025-01-01T00:00:00.000Z",
-            "currentHashedRefreshToken": null // 通常レスポンスには含めないことが多い
-            // workspaceId や activeWorkspaceId など、関連情報が含まれる可能性あり
+            "name": "テストユーザー",
+            "workspaceId": 1,
+            "projects": [
+              {
+                "id": 1,
+                "workspaceId": 1,
+                "projectUrl": "https://example.com",
+                "projectName": "マイプロジェクト",
+                "description": "これはサンプルプロジェクトです",
+                "lastAcquisitionDate": "2023-01-01T00:00:00.000Z",
+                "createdAt": "2023-01-01T00:00:00.000Z",
+                "updatedAt": "2023-01-01T00:00:00.000Z"
+              },
+              {
+                "id": 2,
+                "workspaceId": 1,
+                "projectUrl": "https://another-example.com",
+                "projectName": "別プロジェクト",
+                "description": null,
+                "lastAcquisitionDate": null,
+                "createdAt": "2023-01-02T00:00:00.000Z",
+                "updatedAt": "2023-01-02T00:00:00.000Z"
+              }
+            ]
           }
           ```
-          **注意:** `req.user` の正確な型は `JwtStrategy` の `validate` メソッドの戻り値に依存します。上記は一般的なユーザー情報の例です。パスワードやリフレッシュトークンハッシュなどの機密情報は通常ここには含まれません。
     - **401 Unauthorized:** 認証トークンが無効または不足。
+    - **404 Not Found:** ユーザーが見つかりません。
 
 ---
 
 ## DTO定義
 
-### `UserResponseDto` (仮称)
+### `UserProfileDto`
 
-`UserController` の `me` エンドポイントは、`AuthGuard('jwt')` によってリクエストオブジェクト (`req`) に挿入された `user` オブジェクトをそのまま返します。この `user` オブジェクトの正確な構造は、`JwtStrategy` の `validate` ペイロードの定義に依存します。
+`src/users/dto/user-profile.dto.ts` で定義されています。
 
-以下は、一般的なユーザー情報を表すレスポンスDTOの例です。実際のレスポンスには、これ以外のフィールドが含まれる、または一部が含まれない可能性があります。
+| 名前          | 型                  | 説明                                          | 例 (上記JSON参照) |
+| ------------- | ------------------- | --------------------------------------------- | ----------------- |
+| id            | integer             | ユーザーID                                    | 1                 |
+| email         | string              | メールアドレス                                | user@example.com  |
+| name          | string              | ユーザー名                                    | テストユーザー    |
+| workspaceId   | integer \| null     | ワークスペースID (存在しない場合はnull)        | 1                 |
+| projects      | ProjectResponseDto[] | ユーザーに関連付けられたプロジェクトの配列    | (上記JSON参照)    |
+
+### `ProjectResponseDto`
+
+`src/project/dto/project-response.dto.ts` で定義されています。
+
+| 名前                  | 型        | 説明                               | 例                        |
+| --------------------- | --------- | ---------------------------------- | ------------------------- |
+| id                    | integer   | プロジェクトID                     | 1                         |
+| workspaceId           | integer   | ワークスペースID                   | 1                         |
+| projectUrl            | string    | プロジェクトURL                    | https://example.com       |
+| projectName           | string    | プロジェクト名                     | マイプロジェクト          |
+| description           | string \| null | プロジェクトの説明                 | これはサンプルプロジェクトです |
+| lastAcquisitionDate   | Date \| null   | 最終クロール日時                   | 2023-01-01T00:00:00.000Z  |
+| createdAt             | Date      | 作成日時                           | 2023-01-01T00:00:00.000Z  |
+| updatedAt             | Date      | 更新日時                           | 2023-01-01T00:00:00.000Z  |
+
 
 ```typescript
-// 例: src/users/dto/user-response.dto.ts (もし作成する場合)
+// src/users/dto/user-profile.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client'; // PrismaのRole enumをインポート
+import { ProjectResponseDto } from '../../project/dto/project-response.dto';
 
-export class UserResponseDto {
-  @ApiProperty({ description: 'ユーザーID', example: 1 })
+export class UserProfileDto {
+  @ApiProperty({ example: 1, description: 'ユーザーID' })
   id: number;
 
-  @ApiProperty({ description: 'メールアドレス', example: 'user@example.com' })
+  @ApiProperty({ example: 'user@example.com', description: 'メールアドレス' })
   email: string;
 
-  @ApiProperty({ description: 'ユーザー名', example: 'テスト ユーザー', nullable: true })
-  name?: string | null;
+  @ApiProperty({ example: 'テストユーザー', description: 'ユーザー名' })
+  name: string;
 
-  @ApiProperty({ description: '認証プロバイダー (google, emailなど)', example: 'google' })
-  provider: string;
+  @ApiProperty({ example: 1, description: 'ワークスペースID', nullable: true })
+  workspaceId: number | null;
 
-  @ApiProperty({ description: 'プロバイダー固有のID', example: '123456789012345678901', nullable: true })
-  providerId?: string | null;
-
-  @ApiProperty({ description: 'ユーザーロール', enum: Role, example: Role.USER })
-  role: Role;
-
-  // workspaceId, activeWorkspaceId など、アプリケーションの要件に応じて追加される可能性のあるフィールド
-  // @ApiProperty({ description: '現在のワークスペースID', example: 1, nullable: true })
-  // activeWorkspaceId?: number | null;
-
-  @ApiProperty({ description: '作成日時' })
-  createdAt: Date;
-
-  @ApiProperty({ description: '更新日時' })
-  updatedAt: Date;
-
-  // 注意: パスワードやリフレッシュトークンなどの機密情報はレスポンスに含めません。
+  @ApiProperty({
+    description: 'ユーザーに関連付けられたプロジェクトの配列',
+    type: () => [ProjectResponseDto],
+  })
+  projects: ProjectResponseDto[];
 }
+
+// src/project/dto/project-response.dto.ts
+// (ProjectResponseDtoの定義はここでは省略。必要であれば上記表を参照)
+```
