@@ -1,9 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { KeywordArticle } from '@prisma/client';
 
-/**
- * キーワードと記事の関連付けを表す DTO
- */
 export class KeywordArticleDto implements KeywordArticle {
   @ApiProperty({ description: 'キーワードID', example: 1 })
   keywordId: number;

@@ -1,12 +1,5 @@
-// src/keyword/dto/create-keyword.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  Min,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Min } from 'class-validator';
 
 export class CreateKeywordDto {
   @ApiProperty({ description: 'プロジェクトID', example: 1 })

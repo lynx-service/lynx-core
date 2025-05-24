@@ -1,6 +1,5 @@
-// src/keyword/usecase/list-keywords-by-project.usecase.ts
 import { Injectable } from '@nestjs/common';
-import { KeywordDao, RawKeyword } from '../dao/keyword.dao'; // RawKeywordをインポート
+import { KeywordDao, RawKeyword } from '../dao/keyword.dao';
 import { KeywordResponseDto } from '../dto/keyword-response.dto';
 
 // 階層構造を表す型
@@ -22,6 +21,9 @@ type KeywordNode = {
   parentKeyword: KeywordNode | null; // 親ノードへの参照（DTOマッピング用）
   childKeywords: KeywordNode[]; // 子ノードのリスト
 };
+
+// 親キーワードの最大取得階層
+const MAX_PARENT_DEPTH = 3;
 
 @Injectable()
 export class ListKeywordsByProjectUsecase {
@@ -70,8 +72,8 @@ export class ListKeywordsByProjectUsecase {
         memo: raw.memo,
         createdAt: raw.created_at,
         updatedAt: raw.updated_at,
-        parentKeyword: null, // 後で設定
-        childKeywords: [], // 後で設定
+        parentKeyword: null,
+        childKeywords: [],
       };
       nodes.set(node.id, node);
     });
@@ -89,16 +91,13 @@ export class ListKeywordsByProjectUsecase {
           node.parentKeyword = parent; // 親への参照を設定
         } else {
           // 親が見つからない場合（データ不整合など）、ルートとして扱うかエラー処理
-          console.warn(`Parent keyword with id ${node.parentId} not found for keyword ${node.id}. Treating as root.`);
+          console.warn(
+            `Parent keyword with id ${node.parentId} not found for keyword ${node.id}. Treating as root.`,
+          );
           rootNodes.push(node);
         }
       }
     });
-
-    // オプショナル: 子キーワードをID順などでソートする場合
-    // nodes.forEach(node => {
-    //   node.childKeywords.sort((a, b) => a.id - b.id);
-    // });
 
     return rootNodes;
   }
@@ -106,9 +105,11 @@ export class ListKeywordsByProjectUsecase {
   /**
    * KeywordNode（階層構造）をKeywordResponseDtoにマッピングする
    * @param node KeywordNode
+   * @param currentDepth 現在の親キーワードの階層の深さ (ルートからの距離)
+   * @param isMappingParentContext 親キーワードのコンテキストでマッピング中かどうかのフラグ
    * @returns KeywordResponseDto
    */
-  private mapToDto(node: KeywordNode): KeywordResponseDto {
+  private mapToDto(node: KeywordNode, currentDepth = 0, isMappingParentContext = false): KeywordResponseDto {
     const dto: KeywordResponseDto = {
       id: node.id,
       projectId: node.projectId,
@@ -123,13 +124,15 @@ export class ListKeywordsByProjectUsecase {
       memo: node.memo ?? null,
       createdAt: node.createdAt,
       updatedAt: node.updatedAt,
-      // 親キーワードのマッピング: buildKeywordTreeで設定された参照を使用
-      // ただし、無限ループを避けるため、DTOの親はIDのみにするか、階層を制限するなどの考慮が必要
-      // ここではシンプルにDTOの親はnullにしておくか、IDのみにするのが安全
-      // parentKeyword: node.parentKeyword ? this.mapToDto(node.parentKeyword) : null, // 無限ループのリスク
-      parentKeyword: null, // 安全のため一旦nullにする。必要なら別途取得戦略を検討。
+      parentKeyword:
+        node.parentKeyword && currentDepth < MAX_PARENT_DEPTH
+          ? this.mapToDto(node.parentKeyword, currentDepth + 1, true)
+          : null,
       // 子キーワードを再帰的にマッピング
-      childKeywords: node.childKeywords.map((child) => this.mapToDto(child)),
+      // 親キーワードのコンテキストでマッピングしている場合は、子のマッピングをスキップして循環参照を防ぐ
+      childKeywords: isMappingParentContext
+        ? []
+        : node.childKeywords.map((child) => this.mapToDto(child)),
     };
     return dto;
   }

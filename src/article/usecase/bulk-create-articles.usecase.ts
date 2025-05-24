@@ -1,65 +1,65 @@
 import { Injectable } from '@nestjs/common';
-import { CreateScrapingResultDto } from '../dto/create-scraping-result.dto';
-import { ScrapingResult, ScrapingResultDao } from '../dao/scraping-result.dao';
+import { BulkCreateArticlesDto } from '../dto/bulk-create-articles.dto';
+import { ArticleDao, ArticleCreationStats } from '../dao/article.dao';
 
 @Injectable()
-export class BulkCreateScrapingResultUsecase {
-  constructor(private readonly scrapingResultDao: ScrapingResultDao) {}
+export class BulkCreateArticlesUsecase {
+  constructor(private readonly articleDao: ArticleDao) {}
 
   /**
-   * スクレイピング結果を一括保存
-   * @param createScrapingResultDto スクレイピング結果DTO
+   * スクレイピング結果（記事情報）を一括保存
+   * @param bulkCreateArticlesDto 記事一括作成DTO
    * @returns 保存結果の統計情報
    */
   async execute(
-    createScrapingResultDto: CreateScrapingResultDto,
-  ): Promise<ScrapingResult> {
-    const { projectId, articles } = createScrapingResultDto;
+    bulkCreateArticlesDto: BulkCreateArticlesDto,
+  ): Promise<ArticleCreationStats> {
+    const { projectId, articles } = bulkCreateArticlesDto;
 
     // 1. プロジェクトに紐づく既存の記事をすべて削除
     const articlesDeleted =
-      await this.scrapingResultDao.deleteArticlesByProjectId(projectId);
+      await this.articleDao.deleteArticlesByProjectId(projectId);
 
     // 2. 統計情報の初期化
-    const stats: ScrapingResult = {
+    const stats: ArticleCreationStats = {
       articlesDeleted,
       articlesCreated: 0,
       innerLinksCreated: 0,
       outerLinksCreated: 0,
-      headingsCreated: 0,
+      headingsCreated: 0, // Articleモデル自体にはheadingsテーブルはないが、元ロジックに合わせてカウント
     };
 
     // 3. 各記事を処理
-    for (const article of articles) {
+    for (const articleDto of articles) {
       // 3.1. 記事を作成
-      const createdArticle = await this.scrapingResultDao.createArticle(
+      const createdArticle = await this.articleDao.createArticle(
         projectId,
-        article,
+        articleDto,
       );
       stats.articlesCreated += 1;
 
       // 3.2. 内部リンクを処理
-      if (article.internalLinks && article.internalLinks.length > 0) {
+      if (articleDto.internalLinks && articleDto.internalLinks.length > 0) {
         const innerLinksCreated =
-          await this.scrapingResultDao.processInternalLinks(
+          await this.articleDao.processInternalLinks(
             createdArticle.id,
-            article.internalLinks,
+            articleDto.internalLinks,
           );
         stats.innerLinksCreated += innerLinksCreated;
       }
 
       // 3.3. 外部リンクを処理
-      if (article.outerLinks && article.outerLinks.length > 0) {
+      if (articleDto.outerLinks && articleDto.outerLinks.length > 0) {
         const outerLinksCreated =
-          await this.scrapingResultDao.processOuterLinks(
+          await this.articleDao.processOuterLinks(
             createdArticle.id,
-            article.outerLinks,
+            articleDto.outerLinks,
           );
         stats.outerLinksCreated += outerLinksCreated;
       }
 
       // 3.4. 見出しをカウント（JSONデータをカウントする）
-      if (article.headings && article.headings.length > 0) {
+      if (articleDto.headings && articleDto.headings.length > 0) {
         // 見出しの数をカウント（フラット化して数える）
         const countHeadings = (headings: any[]): number => {
           return headings.reduce((count, heading) => {
@@ -70,7 +70,7 @@ export class BulkCreateScrapingResultUsecase {
             );
           }, 0);
         };
-        stats.headingsCreated += countHeadings(article.headings);
+        stats.headingsCreated += countHeadings(articleDto.headings);
       }
     }
 

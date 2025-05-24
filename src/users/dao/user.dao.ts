@@ -1,28 +1,30 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, User, Workspace } from '@prisma/client'; // Prisma をインポート
+import { Prisma, Project, User, Workspace } from '@prisma/client';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { PrismaService } from 'src/share/prisma/prisma.service';
 
 // findById, findByEmail, findOneWithProject のための型定義
-const userWithWorkspaceAndProjects = Prisma.validator<Prisma.UserDefaultArgs>()({
-  include: {
-    workspace: {
-      include: {
-        projects: true,
+const userWithWorkspaceAndProjects = Prisma.validator<Prisma.UserDefaultArgs>()(
+  {
+    include: {
+      workspace: {
+        include: {
+          projects: true,
+        },
       },
+      role: true,
     },
-    role: true,
   },
-});
+);
 
-export type UserWithWorkspaceAndProjects = Prisma.UserGetPayload< // export を追加
+export type UserWithWorkspaceAndProjects = Prisma.UserGetPayload<
   typeof userWithWorkspaceAndProjects
 >;
 
-@Injectable()
 /**
  * UserのDBアクセスを担当するクラス
  */
+@Injectable()
 export class UserDao {
   constructor(private readonly prismaService: PrismaService) {}
 
@@ -52,7 +54,9 @@ export class UserDao {
    * @param {string} email
    * @returns {Promise<UserWithWorkspaceAndProjects | null>}
    */
-  async findByEmail(email: string): Promise<UserWithWorkspaceAndProjects | null> {
+  async findByEmail(
+    email: string,
+  ): Promise<UserWithWorkspaceAndProjects | null> {
     return this.prismaService.user.findUnique({
       where: { email },
       include: {
@@ -70,7 +74,7 @@ export class UserDao {
    * ユーザーIDからユーザー情報とプロジェクト情報を取得
    *
    * @param {number} userId ユーザーID
-   * @returns {Promise<UserWithWorkspaceAndProjects | null>} ユーザーとプロジェクトの情報
+   * @returns {Promise<UserWithWorkspaceAndProjects | null>}
    */
   async findOneWithProject(
     userId: number,
@@ -94,7 +98,7 @@ export class UserDao {
    * @param {number} workspaceId ワークスペースID
    * @returns {Promise<Project>} プロジェクト情報
    */
-  async getProjectByWorkspaceId(workspaceId: number): Promise<any> {
+  async getProjectByWorkspaceId(workspaceId: number): Promise<Project> {
     return this.prismaService.project.findFirst({
       where: { workspaceId },
     });
@@ -102,18 +106,14 @@ export class UserDao {
 
   /**
    * ユーザーの新規登録
-   * ワークスペースとデフォルトプロジェクトも同時に作成
    *
    * @param {CreateUserDto} createUserDto
    * @returns {User}
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // ユーザー作成のみを行う
-    // ワークスペースやプロジェクトの作成は行わない
     return this.prismaService.user.create({
       data: {
         ...createUserDto,
-        // workspaceId はここでは設定しない (null になる)
       },
     });
   }
@@ -136,54 +136,23 @@ export class UserDao {
       throw new NotFoundException(`User with ID ${userId} not found.`);
     }
 
+    // ユーザーに既にワークスペースが紐付いている場合はそのワークスペースを返す
     if (user.workspace) {
       return user.workspace;
     }
 
     // ワークスペースが存在しない場合、新しいワークスペースを作成してユーザーに紐付ける
     const newWorkspace = await this.prismaService.workspace.create({
-      data: {}, // Workspace作成時に特別なデータが不要な場合
+      data: {}, // NOTE：現状、ワークスペースに特別なデータはないため空のオブジェクトを使用
     });
 
+    // ユーザーのワークスペースIDを更新
     await this.prismaService.user.update({
       where: { id: userId },
       data: { workspaceId: newWorkspace.id },
     });
 
     return newWorkspace;
-  }
-
-  /**
-   * 既存ユーザーにワークスペースとプロジェクトを作成して関連付ける
-   *
-   * @param {number} userId ユーザーID
-   * @returns {Promise<User>} 更新されたユーザー情報
-   */
-  async createWorkspaceAndProjectForUser(userId: number): Promise<User> {
-    return this.prismaService.$transaction(async (prisma) => {
-      // 1. ワークスペースを作成
-      const workspace = await prisma.workspace.create({
-        data: {},
-      });
-
-      // 2. デフォルトプロジェクトを作成
-      await prisma.project.create({
-        data: {
-          workspaceId: workspace.id,
-          projectUrl: 'https://example.com',
-          projectName: 'マイプロジェクト',
-          description: 'デフォルトプロジェクト',
-        },
-      });
-
-      // 3. ユーザーを更新し、ワークスペースと関連付け
-      return prisma.user.update({
-        where: { id: userId },
-        data: {
-          workspaceId: workspace.id,
-        },
-      });
-    });
   }
 
   /**

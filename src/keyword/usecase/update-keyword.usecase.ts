@@ -1,4 +1,3 @@
-// src/keyword/usecase/update-keyword.usecase.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { KeywordDao } from '../dao/keyword.dao';
 import { UpdateKeywordDto } from '../dto/update-keyword.dto';
@@ -47,9 +46,7 @@ export class UpdateKeywordUsecase {
         updateData.parentKeyword = { disconnect: true };
       }
     }
-    // 注意: DTOに parentId プロパティが含まれていない場合は、parentKeyword は更新されません。
 
-    // DAOのupdateメソッドを呼び出し (updateDataにはparentIdは含まれない)
     return this.keywordDao.update(id, updateData);
   }
 }

@@ -1,12 +1,12 @@
-// src/keyword/dao/keyword.dao.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/share/prisma/prisma.service';
 import { Keyword, Prisma } from '@prisma/client';
 
 // 再帰クエリの結果を受け取るための型
+// NOTE：SQLのカラム名はスネークケースであるため、RawKeyword型もスネークケースで定義
 export type RawKeyword = {
   id: number;
-  project_id: number; // SQLクエリの結果はスネークケースになるため合わせる
+  project_id: number;
   keyword_name: string;
   parent_id: number | null;
   level: number;
@@ -30,25 +30,7 @@ export class KeywordDao {
    * @returns 作成されたキーワード
    */
   async create(data: Prisma.KeywordCreateInput): Promise<Keyword> {
-    // dataからparentIdを取得し、元のdataオブジェクトからは削除する
-    // Prisma.KeywordCreateInputにはparentIdが含まれないため、anyキャストで対応
-    // 本来はUsecase層などでparentIdを分離して渡すのが望ましい
-    const { parentId, ...restData } = data as any;
-
-    // Prismaに渡すデータを作成
-    const createData: Prisma.KeywordCreateInput = {
-      ...restData, // parentId以外のデータを展開
-    };
-
-    // parentIdが存在し、かつnullでない場合、parentKeywordリレーションを設定
-    if (parentId !== null && parentId !== undefined) {
-      createData.parentKeyword = {
-        connect: { id: parentId },
-      };
-    }
-
-    // Prisma Clientでキーワードを作成
-    return this.prisma.keyword.create({ data: createData });
+    return this.prisma.keyword.create({ data });
   }
 
   /**
@@ -59,7 +41,8 @@ export class KeywordDao {
   async findById(
     id: number,
   ): Promise<
-    Keyword & { parentKeyword: Keyword | null; childKeywords: Keyword[] } | null
+    | (Keyword & { parentKeyword: Keyword | null; childKeywords: Keyword[] })
+    | null
   > {
     // 親と直接の子キーワードを含めて検索
     return this.prisma.keyword.findUnique({
@@ -77,6 +60,7 @@ export class KeywordDao {
    * @returns キーワードのフラットなリスト（全階層）
    */
   async findByProjectId(projectId: number): Promise<RawKeyword[]> {
+    // TODO：3階層までに制限する
     // WITH RECURSIVE を使用して、指定されたプロジェクトの全階層のキーワードを取得
     // カラム名は RawKeyword 型に合わせてスネークケースで取得
     const query = Prisma.sql`
@@ -103,7 +87,6 @@ export class KeywordDao {
     `;
 
     // Prisma.$queryRaw を使用してSQLを実行し、結果を RawKeyword[] 型として返す
-    // SQLインジェクションを防ぐため、パラメータは Prisma.sql タグ付きテンプレートリテラルを使用
     return this.prisma.$queryRaw<RawKeyword[]>(query);
   }
 

@@ -20,13 +20,4 @@ export class AuthService {
     const token = hashed.toString('hex');
     return token;
   }
-
-  /**
-   * リフレッシュトークンをDBに保存
-   * @param userId
-   * @param refreshToken
-   */
-  async storeRefreshToken(userId: number, refreshToken: string): Promise<void> {
-    await this.userDao.updateRefreshToken(userId, refreshToken); // userDaoを使用
-  }
 }

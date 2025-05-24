@@ -69,9 +69,9 @@ export class HeadingDto {
 }
 
 /**
- * 記事情報のDTO
+ * 記事作成詳細情報のDTO
  */
-export class ArticleDto {
+export class CreateArticleDetailDto {
   @IsString()
   articleUrl: string;
 
@@ -105,14 +105,14 @@ export class ArticleDto {
 }
 
 /**
- * スクレイピング結果のDTO
+ * 記事一括作成のDTO
  */
-export class CreateScrapingResultDto {
+export class BulkCreateArticlesDto {
   @IsNumber()
   projectId: number;
   
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ArticleDto)
-  articles: ArticleDto[];
+  @Type(() => CreateArticleDetailDto)
+  articles: CreateArticleDetailDto[];
 }

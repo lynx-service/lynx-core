@@ -1,8 +1,7 @@
-// src/keyword/usecase/create-keyword.usecase.ts
 import { Injectable } from '@nestjs/common';
 import { KeywordDao } from '../dao/keyword.dao';
 import { CreateKeywordDto } from '../dto/create-keyword.dto';
-import { Keyword } from '@prisma/client';
+import { Keyword, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CreateKeywordUsecase {
@@ -14,27 +13,32 @@ export class CreateKeywordUsecase {
    * @returns 作成されたキーワード
    */
   async execute(createKeywordDto: CreateKeywordDto): Promise<Keyword> {
-    // DTOからPrismaのCreateInput型に変換
-    // projectリレーションを接続するためにconnectを使用
-    const createData = {
-      ...createKeywordDto,
+    // CreateKeywordDto から Prisma.KeywordCreateInput 型のデータを作成
+    const data: Prisma.KeywordCreateInput = {
+      keywordName: createKeywordDto.keywordName,
+      level: createKeywordDto.level,
+      searchVolume: createKeywordDto.searchVolume,
+      difficulty: createKeywordDto.difficulty,
+      relevance: createKeywordDto.relevance,
+      searchIntent: createKeywordDto.searchIntent,
+      importance: createKeywordDto.importance,
+      memo: createKeywordDto.memo,
+      // プロジェクトIDでプロジェクトを紐付け
       project: {
         connect: { id: createKeywordDto.projectId },
       },
-      // parentIdが存在する場合のみ、parentKeywordリレーションを接続
-      ...(createKeywordDto.parentId && {
-        parentKeyword: {
-          connect: { id: createKeywordDto.parentId },
-        },
-      }),
     };
-    // projectIdはリレーションで使用するため不要なので削除
-    delete createData.projectId;
-    // parentIdはリレーションで使用するため不要なので削除
-    if (createData.parentId) {
-      delete createData.parentId;
+
+    // parentId が存在する場合、parentKeywordリレーションを設定
+    if (
+      createKeywordDto.parentId !== null &&
+      createKeywordDto.parentId !== undefined
+    ) {
+      data.parentKeyword = {
+        connect: { id: createKeywordDto.parentId },
+      };
     }
 
-    return this.keywordDao.create(createData);
+    return this.keywordDao.create(data);
   }
 }

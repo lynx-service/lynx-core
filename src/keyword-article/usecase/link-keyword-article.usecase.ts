@@ -4,15 +4,14 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { KeywordDao } from '../../keyword/dao/keyword.dao';
-// ScrapingModule から Article を取得する Dao をインポート
-import { ScrapingResultDao } from '../../scraping/dao/scraping-result.dao';
+import { ArticleDao } from '../../article/dao/article.dao';
 import { KeywordArticleDao } from '../dao/keyword-article.dao';
 
 @Injectable()
 export class LinkKeywordArticleUsecase {
   constructor(
     private readonly keywordDao: KeywordDao,
-    private readonly scrapingResultDao: ScrapingResultDao, // 正しい Dao を注入
+    private readonly articleDao: ArticleDao,
     private readonly keywordArticleDao: KeywordArticleDao,
   ) {}
 
@@ -26,13 +25,13 @@ export class LinkKeywordArticleUsecase {
    */
   async execute(keywordId: number, articleId: number) {
     // 1. キーワードの存在確認
-    const keyword = await this.keywordDao.findById(keywordId); // findById に修正
+    const keyword = await this.keywordDao.findById(keywordId);
     if (!keyword) {
       throw new NotFoundException(`Keyword with ID ${keywordId} not found.`);
     }
 
     // 2. 記事の存在確認
-    const article = await this.scrapingResultDao.findById(articleId); // scrapingResultDao.findById を使用
+    const article = await this.articleDao.findById(articleId);
     if (!article) {
       throw new NotFoundException(`Article with ID ${articleId} not found.`);
     }

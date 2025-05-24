@@ -7,7 +7,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
-import { ProjectModule } from '../project/project.module'; // ProjectModule をインポート
+import { ProjectModule } from '../project/project.module';
 import { FindOrCreateGoogleUserUsecase } from './usecase/find-or-create-google-user.usecase';
 import { LoginUsecase } from './usecase/login.usecase';
 import { RefreshTokenUsecase } from './usecase/refresh-token.usecase';
@@ -15,7 +15,7 @@ import { RefreshTokenUsecase } from './usecase/refresh-token.usecase';
 @Module({
   imports: [
     UsersModule,
-    ProjectModule, // ProjectModule を追加
+    ProjectModule,
     PassportModule,
     JwtModule.registerAsync({
       useFactory: async (configService: ConfigService) => {
@@ -40,6 +40,12 @@ import { RefreshTokenUsecase } from './usecase/refresh-token.usecase';
     LoginUsecase,
     RefreshTokenUsecase,
   ],
-  exports: [AuthService, FindOrCreateGoogleUserUsecase, LoginUsecase, RefreshTokenUsecase],
+  exports: [
+    AuthService,
+    JwtStrategy, // JwtStrategy をエクスポートに追加
+    FindOrCreateGoogleUserUsecase,
+    LoginUsecase,
+    RefreshTokenUsecase,
+  ],
 })
 export class AuthModule {}

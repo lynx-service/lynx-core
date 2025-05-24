@@ -13,12 +13,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ) {
     // 環境変数からバックエンドURLを取得してコールバックURLを生成
     let backendUrl = configService.get<string>('BACKEND_URL');
-    
+
     // 本番環境の場合、または環境変数が設定されていない場合は本番URLを使用
     if (process.env.NODE_ENV === 'production' || !backendUrl) {
       backendUrl = 'https://lynx-core.onrender.com';
     }
-    
+
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID'),
       clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET'),
@@ -42,9 +42,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     };
 
     try {
-      const user: User = await this.findOrCreateGoogleUserUsecase.execute(
-        userToFindOrCreate,
-      );
+      const user: User =
+        await this.findOrCreateGoogleUserUsecase.execute(userToFindOrCreate);
       done(null, user);
     } catch (error) {
       done(error, false);

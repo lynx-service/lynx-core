@@ -26,7 +26,7 @@ export class RefreshTokenUsecase {
     const newRefreshToken = await this.authService.generateRefreshToken();
 
     // 新しいリフレッシュトークンをDBに保存
-    await this.authService.storeRefreshToken(user.id, newRefreshToken);
+    await this.userDao.updateRefreshToken(user.id, newRefreshToken);
 
     return {
       accessToken,

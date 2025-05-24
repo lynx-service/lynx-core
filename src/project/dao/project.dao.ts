@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../share/prisma/prisma.service';
-import { Prisma, Project } from '@prisma/client';
+import { Project } from '@prisma/client';
 import { CreateProjectDto } from '../dto/create-project.dto';
 
 @Injectable()
@@ -35,7 +35,6 @@ export class ProjectDao {
         projectName,
         description,
         workspaceId,
-        // lastAcquisitionDate はユーザー指定ではないため、ここでは設定しない
       },
     });
   }
@@ -45,9 +44,7 @@ export class ProjectDao {
    * @param workspaceId ワークスペースID
    * @returns プロジェクト or null
    */
-  async findFirstByWorkspaceId(
-    workspaceId: number,
-  ): Promise<Project | null> {
+  async findFirstByWorkspaceId(workspaceId: number): Promise<Project | null> {
     return this.prisma.project.findFirst({
       where: { workspaceId },
     });
@@ -61,7 +58,7 @@ export class ProjectDao {
   async findAllByWorkspaceId(workspaceId: number): Promise<Project[]> {
     return this.prisma.project.findMany({
       where: { workspaceId },
-      orderBy: { createdAt: 'asc' }, // 必要に応じてソート順を指定
+      orderBy: { createdAt: 'asc' },
     });
   }
 }

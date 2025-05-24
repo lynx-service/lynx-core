@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import { AuthService } from '../auth.service';
+import { UserDao } from 'src/users/dao/user.dao';
 
 type PasswordOmitUser = Omit<User, 'password'>;
 
@@ -10,6 +11,7 @@ export class LoginUsecase {
   constructor(
     private readonly jwtService: JwtService,
     private readonly authService: AuthService,
+    private readonly userDao: UserDao,
   ) {}
 
   /**
@@ -26,8 +28,8 @@ export class LoginUsecase {
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = await this.authService.generateRefreshToken();
 
-    // リフレッシュトークンをDBに保存
-    await this.authService.storeRefreshToken(user.id, refreshToken);
+    // refreshTokenをDBに保存
+    await this.userDao.updateRefreshToken(user.id, refreshToken);
 
     return {
       accessToken,

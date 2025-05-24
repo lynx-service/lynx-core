@@ -5,25 +5,24 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './share/prisma/prisma.module';
-import { ScrapingModule } from './scraping/scraping.module';
 import { KeywordModule } from './keyword/keyword.module';
-import { KeywordArticleModule } from './keyword-article/keyword-article.module'; // KeywordArticleModule をインポート
-import { ArticleModule } from './article/article.module'; // ArticleModule をインポート
-import { ProjectModule } from './project/project.module'; // ProjectModule をインポート
+import { KeywordArticleModule } from './keyword-article/keyword-article.module';
+import { ArticleModule } from './article/article.module';
+import { ProjectModule } from './project/project.module';
 
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
     UsersModule,
-    ScrapingModule,
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`, // 環境に応じた.envファイル読み込み
     }),
     KeywordModule,
-    KeywordArticleModule, // KeywordArticleModule を追加
-    ArticleModule, // ArticleModule を追加
-    ProjectModule, // ProjectModule を追加
+    KeywordArticleModule,
+    ArticleModule,
+    ProjectModule,
   ],
   controllers: [AppController],
   providers: [AppService],

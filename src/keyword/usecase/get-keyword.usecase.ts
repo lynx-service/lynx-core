@@ -1,8 +1,7 @@
-// src/keyword/usecase/get-keyword.usecase.ts
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { KeywordDao } from '../dao/keyword.dao';
 import { KeywordResponseDto } from '../dto/keyword-response.dto';
-import { Keyword } from '@prisma/client'; // Keyword型をインポート
+import { Keyword } from '@prisma/client';
 
 // DAOから取得するKeywordの型を定義（親子関係を含む）
 type KeywordWithRelations = Keyword & {
@@ -21,7 +20,6 @@ export class GetKeywordUsecase {
    * @throws NotFoundException キーワードが見つからない場合
    */
   async execute(id: number): Promise<KeywordResponseDto> {
-    // DAOを使用してキーワードを検索
     const keyword = await this.keywordDao.findById(id);
 
     // キーワードが見つからない場合はNotFoundExceptionをスロー
@@ -47,24 +45,23 @@ export class GetKeywordUsecase {
       parentId: keyword.parentId,
       level: keyword.level,
       searchVolume: keyword.searchVolume,
-      difficulty: keyword.difficulty ?? null, // null合体演算子でnullを許容
+      difficulty: keyword.difficulty ?? null,
       relevance: keyword.relevance ?? null,
       searchIntent: keyword.searchIntent ?? null,
       importance: keyword.importance ?? null,
       memo: keyword.memo ?? null,
       createdAt: keyword.createdAt,
       updatedAt: keyword.updatedAt,
-      // --- 親子関係のマッピングを追加 ---
       parentKeyword: keyword.parentKeyword
-        ? this.mapToDto(keyword.parentKeyword as KeywordWithRelations) // 親を再帰的にマッピング ※型アサーションが必要
+        ? this.mapToDto(keyword.parentKeyword as KeywordWithRelations)
         : null,
       childKeywords: keyword.childKeywords
         ? keyword.childKeywords.map((child) =>
-            this.mapToDto(child as KeywordWithRelations), // 子を再帰的にマッピング ※型アサーションが必要
+            this.mapToDto(child as KeywordWithRelations),
           )
         : [],
-      // --- ここまで ---
     };
+
     return dto;
   }
 }
