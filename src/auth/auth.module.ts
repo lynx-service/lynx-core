@@ -8,6 +8,9 @@ import { GoogleStrategy } from './strategy/google.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { ProjectModule } from '../project/project.module'; // ProjectModule をインポート
+import { FindOrCreateGoogleUserUsecase } from './usecase/find-or-create-google-user.usecase';
+import { LoginUsecase } from './usecase/login.usecase';
+import { RefreshTokenUsecase } from './usecase/refresh-token.usecase';
 
 @Module({
   imports: [
@@ -29,7 +32,14 @@ import { ProjectModule } from '../project/project.module'; // ProjectModule を�
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    GoogleStrategy,
+    FindOrCreateGoogleUserUsecase,
+    LoginUsecase,
+    RefreshTokenUsecase,
+  ],
+  exports: [AuthService, FindOrCreateGoogleUserUsecase, LoginUsecase, RefreshTokenUsecase],
 })
 export class AuthModule {}

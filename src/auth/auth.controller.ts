@@ -1,14 +1,16 @@
 import { Controller, Post, Body, UseGuards, Get, Req, Redirect } from '@nestjs/common';
-import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
-import { ConfigService } from '@nestjs/config'; // ConfigServiceをインポート
+import { ConfigService } from '@nestjs/config';
+import { LoginUsecase } from './usecase/login.usecase';
+import { RefreshTokenUsecase } from './usecase/refresh-token.usecase';
+import { User } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
-  // ConfigServiceをインジェクト
   constructor(
-    private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly loginUsecase: LoginUsecase,
+    private readonly refreshTokenUsecase: RefreshTokenUsecase,
   ) {}
 
   @Get('google')
@@ -20,9 +22,9 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @Redirect()
-  async googleAuthRedirect(@Req() req) {
-    const tokens = await this.authService.login(req.user);
-    
+  async googleAuthRedirect(@Req() req: { user: Omit<User, 'password'> }) { // req.userの型を明示
+    const tokens = await this.loginUsecase.execute(req.user);
+
     // 環境変数からフロントエンドURLを取得
     let frontendBaseUrl = this.configService.get<string>('FRONTEND_URL');
     
@@ -40,6 +42,6 @@ export class AuthController {
 
   @Post('refresh')
   async refresh(@Body('refreshToken') refreshToken: string) {
-    return this.authService.refreshToken(refreshToken);
+    return this.refreshTokenUsecase.execute(refreshToken); // RefreshTokenUsecase を使用
   }
 }
