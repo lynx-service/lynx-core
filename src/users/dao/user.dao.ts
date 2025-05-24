@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { User, Workspace } from '@prisma/client';
 import { CreateUserDto } from 'src/auth/dto/create-user.dto';
 import { PrismaService } from 'src/share/prisma/prisma.service';
 
@@ -65,30 +65,49 @@ export class UserDao {
    * @returns {User}
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    return this.prismaService.$transaction(async (prisma) => {
-      // 1. ワークスペースを作成
-      const workspace = await prisma.workspace.create({
-        data: {},
-      });
-
-      // 2. デフォルトプロジェクトを作成
-      await prisma.project.create({
-        data: {
-          workspaceId: workspace.id,
-          projectUrl: 'https://example.com',
-          projectName: 'マイプロジェクト',
-          description: 'デフォルトプロジェクト',
-        },
-      });
-
-      // 3. ユーザーを作成し、ワークスペースと関連付け
-      return prisma.user.create({
-        data: {
-          ...createUserDto,
-          workspaceId: workspace.id,
-        },
-      });
+    // ユーザー作成のみを行う
+    // ワークスペースやプロジェクトの作成は行わない
+    return this.prismaService.user.create({
+      data: {
+        ...createUserDto,
+        // workspaceId はここでは設定しない (null になる)
+      },
     });
+  }
+
+  /**
+   * ユーザーにワークスペースが存在することを確認し、存在しない場合は作成して紐付ける。
+   * 最終的にユーザーに紐づくワークスペースを返す。
+   *
+   * @param {number} userId ユーザーID
+   * @returns {Promise<Workspace>} ユーザーに紐づくワークスペース
+   * @throws {NotFoundException} ユーザーが見つからない場合
+   */
+  async ensureWorkspaceForUser(userId: number): Promise<Workspace> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id: userId },
+      include: { workspace: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found.`);
+    }
+
+    if (user.workspace) {
+      return user.workspace;
+    }
+
+    // ワークスペースが存在しない場合、新しいワークスペースを作成してユーザーに紐付ける
+    const newWorkspace = await this.prismaService.workspace.create({
+      data: {}, // Workspace作成時に特別なデータが不要な場合
+    });
+
+    await this.prismaService.user.update({
+      where: { id: userId },
+      data: { workspaceId: newWorkspace.id },
+    });
+
+    return newWorkspace;
   }
 
   /**

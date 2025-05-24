@@ -7,10 +7,12 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
+import { ProjectModule } from '../project/project.module'; // ProjectModule をインポート
 
 @Module({
   imports: [
     UsersModule,
+    ProjectModule, // ProjectModule を追加
     PassportModule,
     JwtModule.registerAsync({
       useFactory: async (configService: ConfigService) => {

@@ -7,9 +7,12 @@ import { DeleteKeywordUsecase } from './usecase/delete-keyword.usecase';
 import { ListKeywordsByProjectUsecase } from './usecase/list-keywords-by-project.usecase';
 import { GetKeywordUsecase } from './usecase/get-keyword.usecase'; // GetKeywordUsecase をインポート
 import { PrismaModule } from 'src/share/prisma/prisma.module'; // PrismaModuleをインポート
+import { AuthModule } from 'src/auth/auth.module'; // AuthModule をインポート
+import { UsersModule } from 'src/users/users.module'; // UsersModule をインポート
+import { ProjectModule } from 'src/project/project.module'; // ProjectModule をインポート
 
 @Module({
-  imports: [PrismaModule], // PrismaModuleをインポート
+  imports: [PrismaModule, AuthModule, UsersModule, ProjectModule], // PrismaModule, AuthModule, UsersModule, ProjectModuleをインポート
   controllers: [KeywordController],
   providers: [
     KeywordDao, // 重複を削除

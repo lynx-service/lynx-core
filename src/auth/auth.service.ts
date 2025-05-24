@@ -22,17 +22,24 @@ export class AuthService {
     let user = await this.usersService.findOne(input.email);
 
     if (!user) {
-      // 新規ユーザー作成（ワークスペースとプロジェクトも同時に作成）
+      // 新規ユーザー作成
       user = await this.usersService.create(input);
-    } else if (!user.workspaceId) {
-      // ユーザーは存在するがワークスペースが関連付けられていない場合
-      // ワークスペースとプロジェクトを作成して関連付け
-      user = await this.usersService.createWorkspaceAndProjectForUser(user.id);
     }
+    // 既存ユーザーの場合、または新規作成されたユーザーの場合でも、
+    // ワークスペースやプロジェクトの作成はここでは行わない。
+    // プロジェクト登録API側でワークスペースの存在確認・作成を行う。
 
-    // リフレッシュトークンを生成して保存
-    const refreshToken = await this.generateRefreshToken();
-    await this.storeRefreshToken(user.id, refreshToken);
+    // ユーザーが存在する場合 (新規作成含む)
+    if (user) {
+      // リフレッシュトークンを生成して保存
+      const refreshToken = await this.generateRefreshToken();
+      await this.storeRefreshToken(user.id, refreshToken);
+    } else {
+      // 基本的にこのケースは発生しないはずだが、念のためエラーハンドリング
+      // もし UsersService.create が null を返す仕様の場合は考慮が必要
+      throw new Error('User could not be found or created.');
+    }
+    // 2重になっていたリフレッシュトークン保存処理を削除
 
     return user;
   }

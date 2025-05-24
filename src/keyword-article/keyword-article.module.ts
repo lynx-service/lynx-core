@@ -8,12 +8,18 @@ import { LinkKeywordArticleUsecase } from './usecase/link-keyword-article.usecas
 import { UnlinkKeywordArticleUsecase } from './usecase/unlink-keyword-article.usecase';
 import { ListArticlesByKeywordUsecase } from './usecase/list-articles-by-keyword.usecase';
 import { ListKeywordsByArticleUsecase } from './usecase/list-keywords-by-article.usecase';
+import { AuthModule } from 'src/auth/auth.module'; // AuthModule をインポート
+import { UsersModule } from 'src/users/users.module'; // UsersModule をインポート
+import { ProjectModule } from 'src/project/project.module'; // ProjectModule をインポート
 
 @Module({
   imports: [
     PrismaModule, // PrismaService を利用可能にする
     KeywordModule, // KeywordDao を利用可能にする (KeywordModule でのエクスポートが必要)
     ScrapingModule, // ScrapingResultDao を利用可能にする (ScrapingModule でのエクスポートが必要)
+    AuthModule, // AuthModule を追加
+    UsersModule, // UsersModule を追加
+    ProjectModule, // ProjectModule を追加
   ],
   controllers: [KeywordArticleController],
   providers: [

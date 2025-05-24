@@ -8,7 +8,7 @@ import { GetUserUseCase } from './usecase/get-user.usecase';
 @Module({
   imports: [PrismaModule],
   providers: [UsersService, UserDao, GetUserUseCase],
-  exports: [UsersService],
+  exports: [UsersService, UserDao], // UserDao をエクスポートに追加
   controllers: [UserController],
 })
 export class UsersModule {}
