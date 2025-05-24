@@ -2,18 +2,160 @@
 
 ## 認証
 
-- `/keywords` エンドポイントへのリクエストには、AuthorizationヘッダーにBearerトークンを含める必要があります。
+- `/keywords` エンドポイント群へのリクエストには、AuthorizationヘッダーにBearerトークンを含める必要があります。
 
 ---
 
 ## Keywords API (`/keywords`)
 
-### 1. キーワード作成
+### 1. キーワード単体取得 (ID指定)
+
+- **Method:** `GET`
+- **Path:** `/keywords/:id`
+- **概要:** 指定されたIDのキーワード情報を1件取得します。
+- **認証:** 必要 (Bearer Token - `JwtAuthGuard` を使用)
+- **パスパラメータ:**
+    - `id` (number, **required**): 取得対象のキーワードID
+- **レスポンス:**
+    - **200 OK:** キーワード取得成功
+        - Content-Type: `application/json`
+        - Schema: `KeywordResponseDto`
+          ```json
+          {
+            "id": 1,
+            "projectId": 1,
+            "keywordName": "キーワード1",
+            "parentId": null,
+            "level": 1,
+            "searchVolume": 100,
+            "difficulty": "低",
+            "relevance": "〇",
+            "searchIntent": "Informational",
+            "importance": "中",
+            "memo": null,
+            "createdAt": "2025-04-30T08:40:00.000Z",
+            "updatedAt": "2025-04-30T08:40:00.000Z",
+            "parentKeyword": null,
+            "childKeywords": [
+              {
+                "id": 2,
+                "projectId": 1,
+                "keywordName": "キーワード2",
+                "parentId": 1,
+                "level": 2,
+                "searchVolume": 50,
+                "difficulty": null,
+                "relevance": null,
+                "searchIntent": null,
+                "importance": null,
+                "memo": "子キーワード",
+                "createdAt": "2025-04-30T08:41:00.000Z",
+                "updatedAt": "2025-04-30T08:41:00.000Z",
+                "parentKeyword": null, // 単体取得時は親が含まれる可能性もあるが、例では簡略化
+                "childKeywords": []
+              }
+            ]
+          }
+          ```
+    - **400 Bad Request:** `id` が不正な形式。
+    - **401 Unauthorized:** 認証トークンが無効または不足。
+    - **404 Not Found:** 指定されたIDのキーワードが存在しない。
+
+### 2. キーワード一覧取得 (プロジェクトID指定)
+
+- **Method:** `GET`
+- **Path:** `/keywords`
+- **概要:** 指定されたプロジェクトIDに紐づくキーワードの一覧を**階層構造**で取得します。レスポンスには、各キーワードの**全階層の子キーワード**が含まれます。
+- **認証:** 必要 (Bearer Token - `JwtAuthGuard` を使用)
+- **クエリパラメータ:**
+    - `projectId` (number, **required**): キーワードを取得するプロジェクトのID
+- **レスポンス:**
+    - **200 OK:** キーワード一覧取得成功
+        - Content-Type: `application/json`
+        - Schema: `KeywordResponseDto[]` (キーワード情報の配列)
+          ```json
+          [
+            {
+              "id": 1,
+              "projectId": 1,
+              "keywordName": "キーワード1",
+              "parentId": null,
+              "level": 1,
+              "searchVolume": 100,
+              "difficulty": "低",
+              "relevance": "〇",
+              "searchIntent": "Informational",
+              "importance": "中",
+              "memo": null,
+              "createdAt": "2025-04-30T08:40:00.000Z",
+              "updatedAt": "2025-04-30T08:40:00.000Z",
+              "parentKeyword": null,
+              "childKeywords": [
+                {
+                  "id": 2,
+                  "projectId": 1,
+                  "keywordName": "キーワード2",
+                  "parentId": 1,
+                  "level": 2,
+                  "searchVolume": 50,
+                  "difficulty": null,
+                  "relevance": null,
+                  "searchIntent": null,
+                  "importance": null,
+                  "memo": "子キーワード",
+                  "createdAt": "2025-04-30T08:41:00.000Z",
+                  "updatedAt": "2025-04-30T08:41:00.000Z",
+                  "parentKeyword": null,
+                  "childKeywords": [
+                    {
+                      "id": 4,
+                      "projectId": 1,
+                      "keywordName": "キーワード2-1",
+                      "parentId": 2,
+                      "level": 3,
+                      "searchVolume": 20,
+                      "difficulty": null,
+                      "relevance": null,
+                      "searchIntent": null,
+                      "importance": null,
+                      "memo": null,
+                      "createdAt": "2025-04-30T08:42:00.000Z",
+                      "updatedAt": "2025-04-30T08:42:00.000Z",
+                      "parentKeyword": null,
+                      "childKeywords": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": 3,
+              "projectId": 1,
+              "keywordName": "キーワード3",
+              "parentId": null,
+              "level": 1,
+              "searchVolume": 80,
+              "difficulty": null,
+              "relevance": null,
+              "searchIntent": null,
+              "importance": "高",
+              "memo": null,
+              "createdAt": "2025-04-30T09:00:00.000Z",
+              "updatedAt": "2025-04-30T09:00:00.000Z",
+              "parentKeyword": null,
+              "childKeywords": []
+            }
+          ]
+          ```
+    - **400 Bad Request:** `projectId` が指定されていない、または不正な形式。
+    - **401 Unauthorized:** 認証トークンが無効または不足。
+
+### 3. キーワード作成
 
 - **Method:** `POST`
 - **Path:** `/keywords`
 - **概要:** 新しいキーワードを登録します。
-- **認証:** 必要 (Bearer Token)
+- **認証:** 必要 (Bearer Token - `JwtAuthGuard` を使用)
 - **リクエストボディ:**
     - Content-Type: `application/json`
     - Schema: `CreateKeywordDto`
@@ -64,146 +206,15 @@
           }
           ```
     - **400 Bad Request:** リクエストボディのバリデーションエラー
-    - **401 Unauthorized:** 認証トークンが無効または不足
-
-### 2. キーワード一覧取得 (プロジェクトID指定)
-
-- **Method:** `GET`
-- **Path:** `/keywords`
-- **概要:** 指定されたプロジェクトIDに紐づくキーワードの一覧を**階層構造**で取得します。レスポンスには、各キーワードの**全階層の子キーワード**が含まれます。
-- **認証:** 必要 (Bearer Token)
-- **クエリパラメータ:**
-    - `projectId` (number, **required**): キーワードを取得するプロジェクトのID
-- **レスポンス:**
-    - **200 OK:** キーワード一覧取得成功
-        - Content-Type: `application/json`
-        - Schema: `KeywordResponseDto[]` (キーワード情報の配列)
-          ```json
-          [
-            {
-              "id": 1,
-              "projectId": 1,
-              "keywordName": "キーワード1",
-              "parentId": null,
-              "level": 1,
-              "searchVolume": 100,
-              "difficulty": "低",
-              "relevance": "〇",
-              "searchIntent": "Informational",
-              "importance": "中",
-              "memo": null,
-              "createdAt": "2025-04-30T08:40:00.000Z",
-              "updatedAt": "2025-04-30T08:40:00.000Z",
-              "parentKeyword": null, // リスト取得時はnull (循環参照防止)
-              "childKeywords": [ // 全階層の子キーワードが含まれる配列
-                { // 1階層目の子キーワードの例
-                  "id": 2,
-                  "projectId": 1,
-                  "keywordName": "キーワード2",
-                  "parentId": 1,
-                  "level": 2,
-                  "searchVolume": 50,
-                  "difficulty": null,
-                  "relevance": null,
-                  "searchIntent": null,
-                  "importance": null,
-                  "memo": "子キーワード",
-                  "createdAt": "2025-04-30T08:41:00.000Z",
-                  "updatedAt": "2025-04-30T08:41:00.000Z",
-                  "parentKeyword": null, // リスト取得時はnull
-                  "childKeywords": [ // 2階層目の子キーワードの例
-                    {
-                      "id": 4,
-                      "projectId": 1,
-                      "keywordName": "キーワード2-1",
-                      "parentId": 2,
-                      "level": 3,
-                      // ... 他のプロパティ
-                      "createdAt": "2025-04-30T08:42:00.000Z",
-                      "updatedAt": "2025-04-30T08:42:00.000Z",
-                      "parentKeyword": null, // リスト取得時はnull
-                      "childKeywords": [] // この子には更に子がない想定
-                    }
-                  ]
-                }
-              ]
-            },
-            { // 別のトップレベルキーワードの例
-              "id": 3,
-              "projectId": 1,
-              "keywordName": "キーワード3", // 名前変更
-              "parentId": null, // トップレベル
-              "level": 1, // レベル変更
-              "searchVolume": 80, // 値変更
-              "difficulty": null,
-              "relevance": null,
-              "searchIntent": null,
-              "importance": "高",
-              "memo": null,
-              "createdAt": "2025-04-30T09:00:00.000Z",
-              "updatedAt": "2025-04-30T09:00:00.000Z",
-              "parentKeyword": null, // 親なし
-              "childKeywords": [] // 子なし
-            }
-            // ... 他のトップレベルキーワードが続く可能性
-          ]
-          ```
-    - **400 Bad Request:** `projectId` が指定されていない、または不正な形式
-    - **401 Unauthorized:** 認証トークンが無効または不足
-
-### 3. キーワード単体取得 (ID指定)
-
-- **Method:** `GET`
-- **Path:** `/keywords/:id`
-- **概要:** 指定されたIDのキーワード情報を1件取得します。
-- **認証:** 必要 (Bearer Token)
-- **パスパラメータ:**
-    - `id` (number, **required**): 取得対象のキーワードID
-- **レスポンス:**
-    - **200 OK:** キーワード取得成功
-        - Content-Type: `application/json`
-        - Schema: `KeywordResponseDto`
-          ```json
-          {
-            "id": 1,
-            "projectId": 1,
-            "keywordName": "キーワード1",
-            "parentId": null,
-            "level": 1,
-            "searchVolume": 100,
-            "difficulty": "低",
-            "relevance": "〇",
-            "searchIntent": "Informational",
-              "importance": "中",
-              "memo": null,
-              "createdAt": "2025-04-30T08:40:00.000Z",
-              "updatedAt": "2025-04-30T08:40:00.000Z",
-              "parentKeyword": null, // 追加: 親なし
-              "childKeywords": [ // 追加: 子キーワードの配列 (例)
-                {
-                  "id": 2,
-                  "projectId": 1,
-                  "keywordName": "キーワード2",
-                  "parentId": 1,
-                  // ... 子キーワードの他のプロパティ ...
-                  "createdAt": "2025-04-30T08:41:00.000Z",
-                  "updatedAt": "2025-04-30T08:41:00.000Z",
-                  "parentKeyword": { /* 親(id:1)のDTOが入る想定だが例では省略 */ },
-                  "childKeywords": []
-                }
-              ]
-          }
-          ```
-    - **400 Bad Request:** `id` が不正な形式
-    - **401 Unauthorized:** 認証トークンが無効または不足
-    - **404 Not Found:** 指定されたIDのキーワードが存在しない
+    - **401 Unauthorized:** 認証トークンが無効または不足。
+    - **404 Not Found:** 指定されたIDのキーワードが存在しない (キーワード作成APIでは通常発生しないが、念のため記載)。
 
 ### 4. キーワード更新
 
 - **Method:** `PATCH`
 - **Path:** `/keywords/:id`
 - **概要:** 指定されたIDのキーワード情報を更新します。
-- **認証:** 必要 (Bearer Token)
+- **認証:** 必要 (Bearer Token - `JwtAuthGuard` を使用)
 - **パスパラメータ:**
     - `id` (number, **required**): 更新対象のキーワードID
 - **リクエストボディ:**
@@ -228,7 +239,7 @@
 - **Method:** `DELETE`
 - **Path:** `/keywords/:id`
 - **概要:** 指定されたIDのキーワードを削除します。関連する `KeywordArticle` も削除される可能性があります（DBのカスケード設定による）。
-- **認証:** 必要 (Bearer Token)
+- **認証:** 必要 (Bearer Token - `JwtAuthGuard` を使用)
 - **パスパラメータ:**
     - `id` (number, **required**): 削除対象のキーワードID
 - **レスポンス:**
