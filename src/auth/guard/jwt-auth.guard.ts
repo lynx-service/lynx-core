@@ -44,7 +44,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const user = request.user;
 
     // 特定のパスはプロジェクト未登録でも許可
-    const allowedPathsWithoutProject = ['/projects', '/auth/logout'];
+    const allowedPathsWithoutProject = ['/projects', '/auth/logout', '/user/me'];
     // パスの取得
     const requestPath = request.route.path;
     if (
