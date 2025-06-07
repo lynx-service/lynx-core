@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -23,8 +24,11 @@ import { ArticleMinimalResponseDto } from './dto/article-minimal-response.dto';
 import { BulkCreateArticlesUsecase } from './usecase/bulk-create-articles.usecase';
 import { GetFormattedArticleByIdUsecase } from './usecase/get-formatted-article-by-id.usecase';
 import { ListFormattedArticlesByProjectUsecase } from './usecase/list-formatted-articles-by-project.usecase';
+import { ListPaginatedArticlesByProjectUsecase } from './usecase/list-paginated-articles-by-project.usecase';
 import { BulkCreateArticlesDto } from './dto/bulk-create-articles.dto';
 import { ArticleResponseDto } from './dto/article-response.dto';
+import { PaginatedArticlesResponseDto } from './dto/paginated-articles-response.dto';
+import { ListPaginatedArticlesDto } from './dto/list-paginated-articles.dto';
 import { ArticleCreationStats } from './dao/article.dao';
 
 @ApiBearerAuth()
@@ -37,6 +41,7 @@ export class ArticleController {
     private readonly bulkCreateArticlesUsecase: BulkCreateArticlesUsecase,
     private readonly getFormattedArticleByIdUsecase: GetFormattedArticleByIdUsecase,
     private readonly listFormattedArticlesByProjectUsecase: ListFormattedArticlesByProjectUsecase,
+    private readonly listPaginatedArticlesByProjectUsecase: ListPaginatedArticlesByProjectUsecase,
   ) {}
 
   /**
@@ -120,5 +125,34 @@ export class ArticleController {
     @Param('id', ParseIntPipe) id: number,
   ): Promise<ArticleResponseDto> {
     return await this.getFormattedArticleByIdUsecase.execute(id);
+  }
+
+  /**
+   * プロジェクトIDに紐づく記事一覧をページネーションで取得 (フィード形式)
+   * @param projectId プロジェクトID
+   * @param query ページネーションクエリパラメータ
+   * @returns ページネーションされた記事一覧
+   */
+  @Get('/project/:projectId/feed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      '指定したプロジェクトに紐づく記事をページネーションで取得 (フィード形式)',
+  })
+  @ApiParam({ name: 'projectId', description: 'プロジェクトID', type: Number })
+  @ApiResponse({
+    status: 200,
+    description: 'ページネーションされた記事一覧取得成功',
+    type: PaginatedArticlesResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'プロジェクトが見つからない' })
+  async listPaginatedArticlesByProject(
+    @Param('projectId', ParseIntPipe) projectId: number,
+    @Query() query: ListPaginatedArticlesDto,
+  ): Promise<PaginatedArticlesResponseDto> {
+    return await this.listPaginatedArticlesByProjectUsecase.execute(
+      projectId,
+      query,
+    );
   }
 }

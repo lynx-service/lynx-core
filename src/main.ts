@@ -24,7 +24,16 @@ async function bootstrap() {
     origin: frontendUrl,
     credentials: true,
   });
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // ペイロードの型変換を有効にする
+      whitelist: true, // DTOに定義されていないプロパティを自動的に削除
+      forbidNonWhitelisted: true, // DTOに定義されていないプロパティが含まれている場合にエラー
+      transformOptions: {
+        enableImplicitConversion: true, // 暗黙的な型変換を有効にする (文字列から数値など)
+      },
+    }),
+  );
 
   // Swaggerの設定
   const config = new DocumentBuilder()

@@ -250,4 +250,49 @@ export class ArticleDao {
       where: { id: articleId },
     });
   }
+
+  /**
+   * プロジェクトIDに紐づく記事をページネーションで取得 (フィード形式)
+   * @param projectId プロジェクトID
+   * @param cursor カーソル (id_createdAt)
+   * @param take 取得件数
+   * @returns 記事の配列と次のカーソル
+   */
+  async findPaginatedByProjectId(
+    projectId: number,
+    cursor?: number,
+    take?: number, // this 'take' is the number of items the usecase wants to fetch (e.g., limit + 1)
+  ): Promise<ArticleWithRelations[]> {
+    // ArticleResponseDto に合わせて internalLinks と outerLinks を取得
+    const orderBy: Prisma.ArticleOrderByWithRelationInput[] = [
+      { createdAt: 'desc' },
+      { id: 'asc' }, // Stable sort for items with the same createdAt
+    ];
+
+    const findManyArgs: Prisma.ArticleFindManyArgs = {
+      where: { projectId },
+      orderBy,
+      take: take ? Number(take) : undefined,
+      include: {
+        // ArticleResponseDto に合わせて内部リンクと外部リンクを含める
+        internalLinks: true,
+        outerLinks: true,
+        // keywords は ArticleResponseDto には含まれないため、ここでは取得しない
+      },
+    };
+
+    if (cursor !== undefined) { // cursor が undefined でないことを確認
+      // カーソルが指定されている場合、skipを使用してページネーションを実現
+      findManyArgs.cursor = {
+        id: cursor,
+      };
+      findManyArgs.skip = 1; // Skip the cursor item itself
+    }
+
+    const articles = await this.prisma.article.findMany(findManyArgs);
+
+    // The logic for determining `hasNextPage` and `nextCursor` will be in the Usecase,
+    // which will fetch `take + 1` items.
+    return articles as ArticleWithRelations[];
+  }
 }

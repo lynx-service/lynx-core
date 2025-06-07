@@ -9,6 +9,7 @@ import { UsersModule } from 'src/users/users.module';
 import { BulkCreateArticlesUsecase } from './usecase/bulk-create-articles.usecase';
 import { GetFormattedArticleByIdUsecase } from './usecase/get-formatted-article-by-id.usecase';
 import { ListFormattedArticlesByProjectUsecase } from './usecase/list-formatted-articles-by-project.usecase';
+import { ListPaginatedArticlesByProjectUsecase } from './usecase/list-paginated-articles-by-project.usecase';
 
 @Module({
   imports: [PrismaModule, ProjectModule, AuthModule, UsersModule],
@@ -19,6 +20,7 @@ import { ListFormattedArticlesByProjectUsecase } from './usecase/list-formatted-
     BulkCreateArticlesUsecase,
     GetFormattedArticleByIdUsecase,
     ListFormattedArticlesByProjectUsecase,
+    ListPaginatedArticlesByProjectUsecase,
   ],
   exports: [
     ArticleDao,
@@ -26,6 +28,7 @@ import { ListFormattedArticlesByProjectUsecase } from './usecase/list-formatted-
     BulkCreateArticlesUsecase,
     GetFormattedArticleByIdUsecase,
     ListFormattedArticlesByProjectUsecase,
+    ListPaginatedArticlesByProjectUsecase,
   ],
 })
 export class ArticleModule {}
